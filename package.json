@@ -1,0 +1,9 @@
+{
+  "name": "dor-recovery-console",
+  "private": true,
+  "type": "module",
+  "description": "Delivery Recovery & Governance Console — static, serverless companion to dor-gatekeeper.",
+  "scripts": {
+    "test": "node tests/run.js"
+  }
+}

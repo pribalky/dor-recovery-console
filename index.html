@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delivery Recovery & Governance Console</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <header class="app-header no-print">
+    <div class="header-top">
+      <h1>Delivery Recovery &amp; Governance Console</h1>
+      <p class="tagline">Ingests an App 1 DoR Gatekeeper JSON export and adds financial exposure, RAID tracking, and an executive recovery brief.</p>
+    </div>
+
+    <div class="ingest-controls">
+      <div class="field">
+        <label for="paste-input">Paste App 1 JSON export</label>
+        <textarea id="paste-input" rows="6" placeholder="Paste the exported JSON here…"></textarea>
+      </div>
+
+      <div class="ingest-row">
+        <div class="field">
+          <label for="file-input">…or upload a file</label>
+          <input type="file" id="file-input" accept="application/json,.json" />
+        </div>
+
+        <div class="field">
+          <label for="sample-select">…or load a sample export</label>
+          <select id="sample-select"></select>
+        </div>
+
+        <button id="load-btn" type="button">Validate &amp; Load</button>
+        <button id="reset-btn" type="button" class="secondary">Reset</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="ingest-errors" class="errors-region no-print" role="alert"></div>
+
+  <main id="console-section" class="app-main" hidden>
+    <div id="summary-bar" class="summary-bar"></div>
+
+    <section class="sort-section no-print">
+      <span class="sort-label">Sort gaps by:</span>
+      <button class="sort-btn active" type="button" data-sort="severity">Severity (default)</button>
+      <button class="sort-btn" type="button" data-sort="exposure">$ Exposure</button>
+      <button class="sort-btn" type="button" data-sort="raid">RAID Priority</button>
+    </section>
+
+    <section class="panel">
+      <h2>Gap Analysis &amp; Financial Impact</h2>
+      <div class="table-scroll">
+        <table class="gap-table">
+          <thead>
+            <tr><th>Severity</th><th>Gap</th><th>Cost / Utilisation</th></tr>
+          </thead>
+          <tbody id="gap-table-body"></tbody>
+        </table>
+      </div>
+      <h3>Total Financial Exposure</h3>
+      <div id="exposure-summary" class="exposure-summary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>RAID Log</h2>
+      <div class="table-scroll">
+        <table class="raid-table">
+          <thead>
+            <tr><th>Type</th><th>Description</th><th>Owner</th><th>Status</th><th>Raised</th><th>Target</th><th>Escalation</th></tr>
+          </thead>
+          <tbody id="raid-table-body"></tbody>
+        </table>
+      </div>
+
+      <div id="raid-rollup" class="raid-rollup"></div>
+
+      <h3>Add RAID Entry</h3>
+      <form id="raid-form" class="raid-form no-print">
+        <div class="field">
+          <label for="raid-type">Type</label>
+          <select id="raid-type" name="type">
+            <option value="A">Assumption</option>
+            <option value="I">Issue</option>
+            <option value="D">Dependency</option>
+          </select>
+        </div>
+        <div class="field field-wide">
+          <label for="raid-description">Description</label>
+          <input type="text" id="raid-description" name="description" placeholder="e.g. Vendor SLA assumed to hold through migration" />
+        </div>
+        <div class="field">
+          <label for="raid-owner">Owner</label>
+          <input type="text" id="raid-owner" name="owner" placeholder="Unassigned" />
+        </div>
+        <div class="field">
+          <label for="raid-status">Status</label>
+          <select id="raid-status" name="status">
+            <option value="Open">Open</option>
+            <option value="Mitigating">Mitigating</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="raid-date-raised">Date Raised</label>
+          <input type="date" id="raid-date-raised" name="dateRaised" />
+        </div>
+        <div class="field">
+          <label for="raid-target-date">Target Resolution</label>
+          <input type="date" id="raid-target-date" name="targetResolutionDate" />
+        </div>
+        <div class="field">
+          <label for="raid-escalation">Escalation Level</label>
+          <select id="raid-escalation" name="escalationLevel">
+            <option value="Team">Team</option>
+            <option value="Programme">Programme</option>
+            <option value="Steering Committee">Steering Committee</option>
+            <option value="Client Exec">Client Exec</option>
+          </select>
+        </div>
+        <button type="submit">Add Entry</button>
+      </form>
+    </section>
+
+    <section class="panel print-section">
+      <h2>Executive Summary &amp; Recovery Plan</h2>
+      <div id="recovery-plan" class="recovery-plan"></div>
+      <div class="export-buttons no-print">
+        <button id="export-md-btn" type="button">Export Markdown</button>
+        <button type="button" onclick="window.print()">Print / Save as PDF</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer no-print">
+    <p>Upstream tool: <a href="https://pribalky.github.io/dor-gatekeeper/">dor-gatekeeper</a> (DoR Gatekeeper) — export its JSON to load here.</p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
