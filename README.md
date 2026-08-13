@@ -1,6 +1,6 @@
 # Delivery Recovery & Governance Console
 
-**🔗 Live app:** deploy to GitHub Pages (see below) and this link will go live at `https://pribalky.github.io/dor-recovery-console/`
+**🔗 Live app: [pribalky.github.io/dor-recovery-console](https://pribalky.github.io/dor-recovery-console/)**
 
 App 2 in the two-app governance toolkit. Ingests [`dor-gatekeeper`](https://pribalky.github.io/dor-gatekeeper/)'s (App 1) JSON export and adds what App 1 deliberately excludes: financial exposure modeling, RAID tracking, escalation paths, and an executive-ready recovery brief.
 
@@ -64,9 +64,10 @@ dor-recovery-console/
 
 1. **Ingest** — paste an App 1 JSON export, upload a `.json` file, or pick one of the 6 bundled samples from the dropdown (4 valid, spanning APPROVED→BLOCKED; 2 deliberately invalid, to show the rejection path). Click **Validate & Load**.
 2. **Gap Analysis & Financial Impact** — every gap from the export is auto-costed by `category_tag` and `severity_gov`. `Other`-tagged gaps show "requires manual costing" with two input fields — enter a range and it folds into the total.
-3. **Sort** — toggle the gap list between Severity (default, inherited from App 1), $ Exposure, and RAID Priority. All three are lenses on the same list, not separate data.
-4. **RAID Log** — one Risk entry is auto-seeded per gap. Add Assumptions/Issues/Dependencies manually via the form below the table; every entry (seeded or manual) carries an editable `escalation_level`.
-5. **Executive Summary & Recovery Plan** — auto-compiled from the above: total exposure, utilisation impact, top exposure gaps, RAID rollups, and a recovery plan. Export as Markdown, or use **Print / Save as PDF** (native browser print, no PDF library).
+3. **Assumptions** — two adjustable controls sit above the gap table: **Team Sprint Capacity (hours)** (the utilisation-% denominator) and **Cost Model Scale (×)** (multiplies every category's $ band). Use these to normalize the illustrative figures to your own team size/engagement without editing code — manually-entered `Other` costs are never rescaled. See `DECISIONS.md` #11, #17.
+4. **Sort** — toggle the gap list between Severity (default, inherited from App 1), $ Exposure, and RAID Priority. All three are lenses on the same list, not separate data.
+5. **RAID Log** — one Risk entry is auto-seeded per gap. Owner, Status, Target Resolution, and Escalation Level are editable directly in the table for every entry, seeded or manual (Type/Description/Date Raised stay fixed). Add Assumptions/Issues/Dependencies manually via the form below the table.
+6. **Executive Summary & Recovery Plan** — auto-compiled from the above: total exposure, utilisation impact, top exposure gaps, RAID rollups, and a recovery plan. Export as Markdown, or use **Print / Save as PDF** (native browser print, no PDF library).
 
 ## Running Locally
 

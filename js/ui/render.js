@@ -1,4 +1,8 @@
-import { RAID_TYPES, ESCALATION_LEVELS, rollupByTypeAndStatus, rollupByEscalationAndStatus } from "../engine/raid.js";
+import { RAID_TYPES, RAID_STATUSES, ESCALATION_LEVELS, rollupByTypeAndStatus, rollupByEscalationAndStatus } from "../engine/raid.js";
+
+function optionsHtml(values, selected) {
+  return values.map((v) => `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`).join("");
+}
 
 export function showErrors(container, errors) {
   container.innerHTML = errors.length
@@ -65,7 +69,10 @@ export function renderExposureSummary(container, exposure) {
   `;
 }
 
-export function renderRaidTable(tbody, entries) {
+// Owner/Status/Target Resolution/Escalation Level are editable for every entry —
+// seeded or manual (DECISIONS.md #7's own noted trade-off: these shouldn't be fixed
+// forever). Type, Description, and Date Raised stay read-only: identity and history.
+export function renderRaidTable(tbody, entries, handlers) {
   if (entries.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty">No RAID entries yet.</td></tr>`;
     return;
@@ -76,15 +83,36 @@ export function renderRaidTable(tbody, entries) {
     <tr>
       <td>${e.type}</td>
       <td>${e.description}${e.priority ? `<div class="gap-meta">Inherited priority: ${e.priority}</div>` : ""}</td>
-      <td>${e.owner}</td>
-      <td>${e.status}</td>
+      <td><input type="text" class="raid-owner-input" data-raid-id="${e.raid_id}" value="${e.owner}" /></td>
+      <td>
+        <select class="raid-status-select" data-raid-id="${e.raid_id}">
+          ${optionsHtml(RAID_STATUSES, e.status)}
+        </select>
+      </td>
       <td>${e.date_raised}</td>
-      <td>${e.target_resolution_date || "—"}</td>
-      <td>${e.escalation_level}</td>
+      <td><input type="date" class="raid-target-input" data-raid-id="${e.raid_id}" value="${e.target_resolution_date || ""}" /></td>
+      <td>
+        <select class="raid-escalation-select" data-raid-id="${e.raid_id}">
+          ${optionsHtml(ESCALATION_LEVELS, e.escalation_level)}
+        </select>
+      </td>
     </tr>
   `
     )
     .join("");
+
+  tbody.querySelectorAll(".raid-owner-input").forEach((input) => {
+    input.addEventListener("change", () => handlers.onFieldChange(input.dataset.raidId, "owner", input.value));
+  });
+  tbody.querySelectorAll(".raid-status-select").forEach((select) => {
+    select.addEventListener("change", () => handlers.onFieldChange(select.dataset.raidId, "status", select.value));
+  });
+  tbody.querySelectorAll(".raid-target-input").forEach((input) => {
+    input.addEventListener("change", () => handlers.onFieldChange(input.dataset.raidId, "target_resolution_date", input.value));
+  });
+  tbody.querySelectorAll(".raid-escalation-select").forEach((select) => {
+    select.addEventListener("change", () => handlers.onFieldChange(select.dataset.raidId, "escalation_level", select.value));
+  });
 }
 
 export function renderRaidRollup(container, entries) {

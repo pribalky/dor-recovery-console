@@ -14,9 +14,19 @@ export const CATEGORY_COST_MODEL = {
 // asking the assessor to re-judge severity a second time.
 export const SEVERITY_MULTIPLIER = { High: 1.0, Med: 0.6, Low: 0.3 };
 
-// Illustrative constants for the utilisation/margin estimate on NFR/HITL gaps.
-export const HOURLY_RATE_USD = 100;
-export const TEAM_SPRINT_CAPACITY_HOURS = 320; // 8 people × 40 hours
+// Rework-hours estimates for the utilisation/margin line, authored directly and
+// independent of the $ cost bands above (a category's $ high figure often bundles
+// in non-labor cost — e.g. HITL's includes reputational risk — so deriving "hours"
+// from it would overcount; see DECISIONS.md #12).
+export const REWORK_HOURS_MODEL = {
+  NFR: { low: 8, high: 60 },
+  HITL: { low: 16, high: 100 },
+};
+
+// Defaults for the adjustable "Assumptions" controls in the UI — illustrative,
+// meant to be normalized per engagement rather than edited in code.
+export const DEFAULT_TEAM_SPRINT_CAPACITY_HOURS = 480; // 6 people x 2-week sprint x 40h/week
+export const DEFAULT_COST_SCALE = 1;
 
 export const UTILISATION_TAGS = new Set(["NFR", "HITL"]);
 

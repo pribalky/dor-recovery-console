@@ -106,13 +106,13 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 
 ---
 
-## 11. Cost bands are illustrative placeholders, explicitly labeled as estimates
+## 11. Cost bands are illustrative placeholders, explicitly labeled as estimates — normalized via an Assumptions panel, not code edits
 
-**Decision:** `js/config/costModel.js` hardcodes a base $ range per `category_tag` (e.g. PII: $50k–$250k). These figures are not derived from real actuarial, regulatory, or contractual data.
+**Decision:** `js/config/costModel.js` hardcodes a base $ range per `category_tag` (e.g. PII: $50k–$250k) and default effort/capacity assumptions. These figures are not derived from real actuarial, regulatory, or contractual data. The UI exposes two adjustable controls over the defaults — **Cost Model Scale** (×, multiplies every category's $ band) and **Team Sprint Capacity** (hours, the utilisation-% denominator) — so a reviewer can normalize the illustrative figures to their own engagement size live, without touching code.
 
-**Why:** The Financial Impact Translator's job is to demonstrate the *mechanism* — automatic category→cost mapping, severity scaling, range-not-point-estimate presentation — not to be a certified costing tool. Labeling the figures as illustrative (here and in the README) keeps the tool honest about what it is: a structured way to reason about exposure, not a source of truth for real dollar figures.
+**Why:** The Financial Impact Translator's job is to demonstrate the *mechanism* — automatic category→cost mapping, severity scaling, range-not-point-estimate presentation — not to be a certified costing tool. Labeling the figures as illustrative (here and in the README) keeps the tool honest about what it is. Making the normalization knobs live in the UI (rather than "edit the config file") means a reviewer can immediately see the mechanism is sound at a different scale, which is a stronger demonstration than a static disclaimer.
 
-**Trade-off:** Numbers shown to a real stakeholder would need replacing with account/contract-specific figures before any real use — by design, this is a config change, not a code change.
+**Trade-off:** Numbers shown to a real stakeholder would still need real account/contract-specific bands, not just a scale multiplier, before any real use. `Other`-tagged manual cost entries are deliberately *not* touched by Cost Model Scale — they're literal user-entered dollars, and silently rescaling them would violate the user's actual input.
 
 ---
 
@@ -163,3 +163,23 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 **Why:** Ingestion, cost, and RAID logic are pure functions over plain JS objects — trivial to assert without a framework's fixtures, mocks, or watch-mode machinery. Using a real framework would mean an `npm install` step this project otherwise has no reason to have.
 
 **Trade-off:** No test-framework conveniences (parallel runs, snapshot testing, rich diffs) — acceptable at this test volume (~55 assertions across 4 files).
+
+---
+
+## 17. Utilisation % is computed from directly-authored rework-hours, not derived from the $ cost figure
+
+**Decision:** `REWORK_HOURS_MODEL` in `js/config/costModel.js` gives NFR and HITL gaps their own explicit, severity-scaled hour estimates (e.g. HITL: 16–100 hours), independent of `CATEGORY_COST_MODEL`'s $ bands. Utilisation % is `reworkHours ÷ teamSprintCapacityHours`, never `($high ÷ hourlyRate) ÷ teamCapacityHours`.
+
+**Why:** This replaces a real bug, not a tuning issue. The original formula derived "rework hours" by dividing a gap's full `high` dollar exposure by an hourly rate — but that dollar figure already bundles in non-labor cost (HITL's driver is explicitly "rework **+ reputational risk**"). A single High-severity HITL gap produced 600 "rework hours" and 187% utilisation from *one gap*, which is nonsensical — you can't fix that by changing the hourly rate or team-capacity constants, because the formula conflates total exposure with labor hours. Authoring hours directly and separately fixes the conflation at its root: a single High NFR/HITL gap now tops out around 12–21% of a sprint's capacity with the default assumptions.
+
+**Trade-off:** Two now-independent estimates (cost $ and rework hours) to maintain per category instead of one derived from the other — worth it since the derived version was actively wrong. Note the *total* utilisation % (summed across all gaps in an assessment) can still legitimately exceed 100% — that's a meaningful signal ("this is more than one sprint's worth of rework across all gaps"), unlike a single gap exceeding 100%, which would indicate a modeling error.
+
+---
+
+## 18. RAID table fields are inline-editable, in a stable (non-re-sorting) row order
+
+**Decision:** Owner, Status, Target Resolution Date, and Escalation Level are editable directly in the RAID table for every entry, seeded or manual — closing the trade-off `DECISIONS.md` #7 already named ("status/level should be editable, not fixed forever"). Type, Description, and Date Raised stay read-only. The table itself renders `state.raidEntries` in stable (insertion) order and is **not** re-sorted by `sortEntriesByPriority` on every edit.
+
+**Why:** Editing was originally wired against a table that re-sorted by RAID priority (status, then days-open) on every `recompute()`. That's fine for a read-only priority view, but for an *editable* table it's a real usability bug: changing one field (e.g. Status → Mitigating) immediately reorders the table, so a second edit in quick succession (e.g. via the same row position) silently lands on a different entry. Verified this in a headless-browser pass before fixing it — editing Owner then Status then Target then Escalation in sequence landed the later edits on the wrong row until the table was pinned to a stable order. `sortEntriesByPriority` (in `js/engine/sort.js`) is unaffected and still used elsewhere; it's simply no longer applied to this particular render.
+
+**Trade-off:** The RAID table no longer visually groups by priority the way the gap list's "RAID Priority" toggle does — acceptable, since an editable log is more usable in a predictable order than a self-reordering one, and the 3-way toggle (PRD §3.4) was always specified for the gap list, not this table.

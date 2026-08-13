@@ -1,7 +1,12 @@
 import { assertEqual, assertTrue } from "./assert.js";
 import { computeGapCost, computeExposure, flattenGaps } from "../js/engine/financialTranslator.js";
 import { VALID_SAMPLE_ASSESSMENTS } from "../js/config/sampleExports.js";
-import { CATEGORY_COST_MODEL, SEVERITY_MULTIPLIER } from "../js/config/costModel.js";
+import {
+  CATEGORY_COST_MODEL,
+  SEVERITY_MULTIPLIER,
+  REWORK_HOURS_MODEL,
+  DEFAULT_TEAM_SPRINT_CAPACITY_HOURS,
+} from "../js/config/costModel.js";
 
 // A known High-severity PII gap costs at the full base range.
 const piiGap = { gap_id: "GAP-TEST-PII", severity_gov: "High", category_tag: "PII" };
@@ -15,12 +20,38 @@ const medCost = computeGapCost(medGap);
 assertEqual(medCost.low, Math.round(CATEGORY_COST_MODEL.Fallback.low * SEVERITY_MULTIPLIER.Med), "Med severity applies the Med multiplier (low)");
 assertEqual(medCost.high, Math.round(CATEGORY_COST_MODEL.Fallback.high * SEVERITY_MULTIPLIER.Med), "Med severity applies the Med multiplier (high)");
 
-// NFR/HITL gaps carry a utilisation impact percentage; other tags don't.
+// NFR/HITL gaps carry a utilisation impact percentage, computed from the directly-
+// authored REWORK_HOURS_MODEL — never derived from the $ cost figure (that figure can
+// bundle in non-labor cost, e.g. HITL's "reputational risk" — see DECISIONS.md #12).
+// A single gap, even High severity, should never approach 100% of a sprint's capacity.
 const nfrGap = { gap_id: "GAP-TEST-NFR", severity_gov: "High", category_tag: "NFR" };
-assertTrue(computeGapCost(nfrGap).utilisationImpactPct > 0, "High NFR gap carries a utilisation impact percentage");
+const nfrUtilisation = computeGapCost(nfrGap).utilisationImpactPct;
+const expectedNfrUtilisation = Math.round(((REWORK_HOURS_MODEL.NFR.high / DEFAULT_TEAM_SPRINT_CAPACITY_HOURS) * 100) * 100) / 100;
+assertEqual(nfrUtilisation, expectedNfrUtilisation, "High NFR gap's utilisation matches reworkHours / teamCapacity, not $/rate");
+assertTrue(nfrUtilisation > 0 && nfrUtilisation < 25, "a single High NFR gap's utilisation stays well under 100% of a sprint");
+
+const hitlGap = { gap_id: "GAP-TEST-HITL", severity_gov: "High", category_tag: "HITL" };
+const hitlUtilisation = computeGapCost(hitlGap).utilisationImpactPct;
+assertTrue(hitlUtilisation > 0 && hitlUtilisation < 25, "a single High HITL gap's utilisation stays well under 100% of a sprint (previously this could exceed 100%)");
 
 const pillarGap = { gap_id: "GAP-TEST-LINEAGE", severity_gov: "High", category_tag: "Lineage" };
 assertEqual(computeGapCost(pillarGap).utilisationImpactPct, undefined, "Lineage gap carries no utilisation impact percentage");
+
+// Assumptions are adjustable: a smaller team capacity raises the utilisation %; the
+// cost model scale multiplies $ bands only, never the rework-hours/utilisation calc.
+const nfrWithSmallerTeam = computeGapCost(nfrGap, undefined, { teamSprintCapacityHours: 80 });
+assertTrue(nfrWithSmallerTeam.utilisationImpactPct > nfrUtilisation, "a smaller team sprint capacity raises the utilisation % for the same gap");
+
+const scaledCost = computeGapCost(piiGap, undefined, { costScale: 2 });
+assertEqual(scaledCost.low, CATEGORY_COST_MODEL.PII.low * 2, "costScale multiplies the $ low estimate");
+assertEqual(scaledCost.high, CATEGORY_COST_MODEL.PII.high * 2, "costScale multiplies the $ high estimate");
+
+const scaledNfr = computeGapCost(nfrGap, undefined, { costScale: 2 });
+assertEqual(scaledNfr.utilisationImpactPct, nfrUtilisation, "costScale never affects the utilisation %, only $ figures");
+
+const otherGapForScale = { gap_id: "GAP-TEST-OTHER-SCALE", severity_gov: "High", category_tag: "Other", category_tag_freetext: "x" };
+const scaledManualOther = computeGapCost(otherGapForScale, { low: 1000, high: 5000 }, { costScale: 2 });
+assertEqual(scaledManualOther.low, 1000, "costScale never rescales a manually-entered Other cost");
 
 // Other-tagged gaps are unmodeled until a manual cost is supplied.
 const otherGap = { gap_id: "GAP-TEST-OTHER", severity_gov: "High", category_tag: "Other", category_tag_freetext: "Something novel" };
