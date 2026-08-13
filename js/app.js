@@ -4,6 +4,7 @@ import { flattenGaps, computeExposure } from "./engine/financialTranslator.js";
 import { seedRaidFromGaps, createManualEntry } from "./engine/raid.js";
 import { sortGapsBySeverity, sortGapsByExposure, sortGapsByRaidPriority } from "./engine/sort.js";
 import { buildMarkdownExport, buildRecoveryPlan, exportFilenameMd } from "./export/markdownExport.js";
+import { buildExecutiveHealthCard, exportFilenameHealthCard } from "./export/executiveHealthCard.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -33,6 +34,7 @@ const els = {
   raidRollup: document.getElementById("raid-rollup"),
   recoveryPlan: document.getElementById("recovery-plan"),
   exportMdBtn: document.getElementById("export-md-btn"),
+  exportHealthCardBtn: document.getElementById("export-health-card-btn"),
   resetBtn: document.getElementById("reset-btn"),
   raidForm: document.getElementById("raid-form"),
   assumpCapacity: document.getElementById("assump-capacity"),
@@ -206,6 +208,13 @@ function init() {
     if (!exposure) return;
     const md = buildMarkdownExport(state.assessment, exposure, state.raidEntries);
     downloadFile(exportFilenameMd(state.assessment.feature_name, state.assessment.assessment_id), md, "text/markdown");
+  });
+
+  els.exportHealthCardBtn.addEventListener("click", () => {
+    const exposure = recompute();
+    if (!exposure) return;
+    const md = buildExecutiveHealthCard(state.assessment, exposure, state.raidEntries);
+    downloadFile(exportFilenameHealthCard(state.assessment.feature_name, state.assessment.assessment_id), md, "text/markdown");
   });
 
   els.resetBtn.addEventListener("click", () => {

@@ -164,6 +164,65 @@ const veryBadExport = {
   ],
 };
 
+// schema_version "1.1" samples — mirror dor-gatekeeper's Water/Energy "Good" sector
+// presets, exercising the extended category_tag enum (Safety/AssetLifecycle/
+// SupplyChain) end to end through ingestion + financial translation.
+const waterGoodExport = {
+  schema_version: "1.1",
+  assessment_id: "sample-water-good-0000",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Sample: Regional Water Network Upgrade",
+  overall_score: 97,
+  gate_decision: "APPROVED",
+  pillars: [
+    {
+      pillar_name: "People & Capability",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-PPL-5", description: "Succession / knowledge-transfer plan for critical asset SMEs", severity_gov: "Low", category_tag: "NFR" },
+      ],
+    },
+    { pillar_name: "Process & Workflow", pillar_score: 100, gaps: [] },
+    {
+      pillar_name: "Data & Integration",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-DATA-1", description: "Asset register / GIS data integration validated", severity_gov: "Med", category_tag: "Lineage" },
+      ],
+    },
+    { pillar_name: "Technology & Infrastructure", pillar_score: 100, gaps: [] },
+    { pillar_name: "Governance & Compliance", pillar_score: 100, gaps: [] },
+  ],
+};
+
+const energyGoodExport = {
+  schema_version: "1.1",
+  assessment_id: "sample-energy-good-0000",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Sample: Regional Grid Modernisation Programme",
+  overall_score: 96,
+  gate_decision: "APPROVED",
+  pillars: [
+    {
+      pillar_name: "People & Capability",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-PPL-5", description: "Knowledge transfer plan for retiring SME workforce", severity_gov: "Low", category_tag: "NFR" },
+      ],
+    },
+    {
+      pillar_name: "Process & Workflow",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-PROC-5", description: "Vendor/contractor onboarding process for field works defined", severity_gov: "Low", category_tag: "SupplyChain" },
+      ],
+    },
+    { pillar_name: "Data & Integration", pillar_score: 100, gaps: [] },
+    { pillar_name: "Technology & Infrastructure", pillar_score: 100, gaps: [] },
+    { pillar_name: "Governance & Compliance", pillar_score: 100, gaps: [] },
+  ],
+};
+
 // Deliberately invalid: not parseable JSON (missing comma after assessment_id).
 const malformedRaw = `{
   "schema_version": "1.0",
@@ -197,6 +256,8 @@ export const VALID_SAMPLE_ASSESSMENTS = {
   good: goodExport,
   intentionally_off: intentionallyOffExport,
   very_bad: veryBadExport,
+  water_good: waterGoodExport,
+  energy_good: energyGoodExport,
 };
 
 export const SAMPLE_EXPORTS = [
@@ -204,6 +265,8 @@ export const SAMPLE_EXPORTS = [
   { id: "good", label: "Good — minor gaps only (valid)", raw: JSON.stringify(goodExport, null, 2) },
   { id: "intentionally_off", label: "Intentionally Off — borderline (valid)", raw: JSON.stringify(intentionallyOffExport, null, 2) },
   { id: "very_bad", label: "Very Bad — not ready (valid)", raw: JSON.stringify(veryBadExport, null, 2) },
+  { id: "water_good", label: "Water Asset Transformation — Good (valid, schema 1.1)", raw: JSON.stringify(waterGoodExport, null, 2) },
+  { id: "energy_good", label: "Energy Grid Operating Model — Good (valid, schema 1.1)", raw: JSON.stringify(energyGoodExport, null, 2) },
   { id: "malformed", label: "Malformed JSON (invalid — tests parse error)", raw: malformedRaw },
   { id: "schema_invalid", label: "Schema-Invalid Export (invalid — tests validation errors)", raw: JSON.stringify(schemaInvalidExport, null, 2) },
 ];

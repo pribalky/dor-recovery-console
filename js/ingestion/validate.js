@@ -10,7 +10,10 @@ const REQUIRED_TOP_FIELDS = [
   "pillars",
 ];
 const VALID_GATE_DECISIONS = new Set(["APPROVED", "CONDITIONAL", "BLOCKED"]);
-const SUPPORTED_SCHEMA_VERSION = "1.0";
+// "1.1" is additive over "1.0" — same shape, extended category_tag enum (Safety/
+// AssetLifecycle/SupplyChain) for sector presets that need it. Both accepted so
+// older "1.0" exports keep working unchanged — see DECISIONS.md.
+const SUPPORTED_SCHEMA_VERSIONS = new Set(["1.0", "1.1"]);
 
 export function parseAssessmentJson(text) {
   try {
@@ -33,8 +36,10 @@ export function validateAssessment(data) {
     if (!(field in data)) errors.push(`Missing required field: "${field}".`);
   }
 
-  if ("schema_version" in data && data.schema_version !== SUPPORTED_SCHEMA_VERSION) {
-    errors.push(`Unsupported schema_version "${data.schema_version}" (expected "${SUPPORTED_SCHEMA_VERSION}").`);
+  if ("schema_version" in data && !SUPPORTED_SCHEMA_VERSIONS.has(data.schema_version)) {
+    errors.push(
+      `Unsupported schema_version "${data.schema_version}" (expected one of: ${[...SUPPORTED_SCHEMA_VERSIONS].join(", ")}).`
+    );
   }
 
   if ("gate_decision" in data && !VALID_GATE_DECISIONS.has(data.gate_decision)) {

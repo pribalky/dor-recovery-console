@@ -8,6 +8,12 @@ export const CATEGORY_COST_MODEL = {
   HITL: { driver: "Rework + reputational risk", basis: "Incident cost, remediation hours", low: 8000, high: 60000 },
   Lineage: { driver: "Data breach / audit failure cost", basis: "Audit remediation, breach cost/record", low: 15000, high: 100000 },
   NFR: { driver: "Rework hours", basis: "Dev day rate × estimated rework effort", low: 4000, high: 30000 },
+  // Extended per schema_version "1.1" — physical/regulated-sector risk themes the
+  // original software-governance enum doesn't honestly cover. Added per the PRD's own
+  // extensibility clause rather than force-fit onto e.g. PII — see DECISIONS.md.
+  Safety: { driver: "Safety incident / HSE compliance failure", basis: "Incident cost, regulatory penalty, remediation", low: 40000, high: 300000 },
+  AssetLifecycle: { driver: "Asset failure / capital delivery slippage", basis: "Replacement cost, programme delay cost", low: 20000, high: 150000 },
+  SupplyChain: { driver: "Vendor/supply disruption risk", basis: "Contract penalty, delay cost, remediation", low: 10000, high: 90000 },
 };
 
 // severity_gov (inherited, immutable from App 1) scales the base range instead of

@@ -183,3 +183,33 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 **Why:** Editing was originally wired against a table that re-sorted by RAID priority (status, then days-open) on every `recompute()`. That's fine for a read-only priority view, but for an *editable* table it's a real usability bug: changing one field (e.g. Status → Mitigating) immediately reorders the table, so a second edit in quick succession (e.g. via the same row position) silently lands on a different entry. Verified this in a headless-browser pass before fixing it — editing Owner then Status then Target then Escalation in sequence landed the later edits on the wrong row until the table was pinned to a stable order. `sortEntriesByPriority` (in `js/engine/sort.js`) is unaffected and still used elsewhere; it's simply no longer applied to this particular render.
 
 **Trade-off:** The RAID table no longer visually groups by priority the way the gap list's "RAID Priority" toggle does — acceptable, since an editable log is more usable in a predictable order than a self-reordering one, and the 3-way toggle (PRD §3.4) was always specified for the gap list, not this table.
+
+---
+
+## 19. `schema_version` "1.1" is accepted alongside "1.0" — additive, not a breaking bump
+
+**Decision:** `js/ingestion/validate.js`'s `SUPPORTED_SCHEMA_VERSIONS` is a set (`{"1.0", "1.1"}`), not a single required value. `"1.1"` exports (from `dor-gatekeeper`'s Water/Energy sector presets) carry 3 extended `category_tag` values (`Safety`, `AssetLifecycle`, `SupplyChain`); `"1.0"` exports are otherwise identical and keep ingesting exactly as before.
+
+**Why:** This is the versioning contract working as originally designed (`DECISIONS.md` #5: *"schema_version allows App 2 to detect and reject stale/incompatible exports instead of failing silently if this enum ever changes"*). The enum *did* change — deliberately, per App 1's own extensibility clause — so App 2's job is to recognize the new version as compatible-but-extended, not to reject it. Rejecting `"1.1"` outright would have broken the sector presets entirely; silently accepting an unrecognized version without updating `KNOWN_CATEGORY_TAGS` would have meant every new-sector gap either failed validation or got miscategorized.
+
+**Trade-off:** App 2 now has to track which schema versions introduced which tags, at least implicitly (the cost model must be kept in sync with whatever tags any supported version can send). At 2 versions and 3 new tags this is trivial; if the enum keeps growing, a per-version tag allowlist might become worth adding.
+
+---
+
+## 20. Cost model extended for `Safety` / `AssetLifecycle` / `SupplyChain`, not routed through `Other`
+
+**Decision:** `CATEGORY_COST_MODEL` gained entries for the 3 new tags (Safety: $40k–$300k; AssetLifecycle: $20k–$150k; SupplyChain: $10k–$90k — same illustrative-placeholder caveat as the original 8, see #11), rather than leaving them to fall through to `Other`'s "requires manual costing" path.
+
+**Why:** `Other` exists for genuinely novel, un-anticipated gap types (PRD's escape hatch). These 3 tags are *not* that — they're deliberately added, known categories with a clear cost driver (safety incidents, asset failure, supply disruption are all well-understood risk types in infrastructure/energy delivery). Routing them through `Other` would mean every Water/Energy assessment shows "pending manual costing" on exactly the gaps that are supposed to demonstrate the Financial Translator's automatic mapping working for those sectors — the opposite of what the sector-preset feature is meant to show.
+
+**Trade-off:** 3 more illustrative dollar bands to keep honest/labeled as such — same discipline already applied to the original 8, no new category of trade-off.
+
+---
+
+## 21. Executive Health Card is a new presentation over existing data, not new computation
+
+**Decision:** `js/export/executiveHealthCard.js`'s "Strategy-to-Execution Health Card" reuses `exposure` (Financial Translator output) and `raidEntries` exactly as computed for the existing Markdown export and on-screen views. It adds one small new piece of config (`js/config/interventionMap.js`, a `category_tag → suggested governance intervention` lookup with a generic fallback) and otherwise just reframes existing numbers in more executive-facing language (overall_score → "TOM Feasibility Score", top exposure gaps → "Root Causes of Operational Rework").
+
+**Why:** The JD requirement behind this ("translate complex analysis into concise, decision-ready recommendations") is a presentation problem, not a data problem — the underlying exposure/RAID computation is already correct and tested. Building a second export format on the same data, rather than a parallel computation path, means there's exactly one place (`financialTranslator.js`) that can get the numbers wrong, and the Health Card can't silently drift out of sync with the detailed Markdown export.
+
+**Trade-off:** The intervention mapping is a flat lookup with one generic fallback, not a rules engine — a tag with no specific mapping still gets a sensible default ("Escalate to Governance & Risk Committee for triage") rather than blocking the export, which matters more than mapping precision for a v1.

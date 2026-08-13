@@ -1,5 +1,15 @@
 import { RAID_TYPES, ESCALATION_LEVELS, rollupByTypeAndStatus, rollupByEscalationAndStatus } from "../engine/raid.js";
 
+// Shared by buildMarkdownExport and buildExecutiveHealthCard — costed gaps ranked by
+// $ high descending; unmodeled (pending manual costing) gaps are excluded, not just
+// sorted last, since they have no $ figure to rank by.
+export function topExposureGaps(exposure, n = 3) {
+  return [...exposure.gaps]
+    .filter((g) => !g.cost.unmodeled)
+    .sort((a, b) => b.cost.high - a.cost.high)
+    .slice(0, n);
+}
+
 // Deterministic template — degrades gracefully to a single sign-off step when the
 // ingested assessment has no gaps left, per PRD's "fail gracefully" principle.
 export function buildRecoveryPlan(assessment, exposure) {
@@ -42,10 +52,7 @@ export function buildMarkdownExport(assessment, exposure, raidEntries) {
 
   lines.push("## Top Exposure Gaps");
   lines.push("");
-  const top3 = [...exposure.gaps]
-    .filter((g) => !g.cost.unmodeled)
-    .sort((a, b) => b.cost.high - a.cost.high)
-    .slice(0, 3);
+  const top3 = topExposureGaps(exposure, 3);
   if (top3.length === 0) {
     lines.push("No costed gaps.");
   } else {

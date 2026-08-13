@@ -73,3 +73,30 @@ const bestExposure = computeExposure(flattenGaps(VALID_SAMPLE_ASSESSMENTS.best))
 assertEqual(bestExposure.totalLow, 0, "fully-ready sample has zero exposure (low)");
 assertEqual(bestExposure.totalHigh, 0, "fully-ready sample has zero exposure (high)");
 assertEqual(bestExposure.pendingManualCostCount, 0, "fully-ready sample has nothing pending manual costing");
+
+// Extended tags (schema_version 1.1: Safety, AssetLifecycle, SupplyChain) cost
+// correctly via the normal category lookup — not silently dumped into "Other".
+const safetyGap = { gap_id: "GAP-TEST-SAFETY", severity_gov: "High", category_tag: "Safety" };
+const safetyCost = computeGapCost(safetyGap);
+assertEqual(safetyCost.unmodeled, false, "Safety gap is costed, not treated as unmodeled");
+assertEqual(safetyCost.low, CATEGORY_COST_MODEL.Safety.low, "High Safety gap costs at the full base low");
+assertEqual(safetyCost.high, CATEGORY_COST_MODEL.Safety.high, "High Safety gap costs at the full base high");
+
+const assetGap = { gap_id: "GAP-TEST-ASSET", severity_gov: "Med", category_tag: "AssetLifecycle" };
+const assetCost = computeGapCost(assetGap);
+assertEqual(assetCost.low, Math.round(CATEGORY_COST_MODEL.AssetLifecycle.low * SEVERITY_MULTIPLIER.Med), "Med AssetLifecycle gap applies the Med multiplier (low)");
+
+const supplyGap = { gap_id: "GAP-TEST-SUPPLY", severity_gov: "Low", category_tag: "SupplyChain" };
+const supplyCost = computeGapCost(supplyGap);
+assertEqual(supplyCost.low, Math.round(CATEGORY_COST_MODEL.SupplyChain.low * SEVERITY_MULTIPLIER.Low), "Low SupplyChain gap applies the Low multiplier (low)");
+
+// The Water "Good" sample (schema 1.1) costs cleanly end-to-end.
+const waterExposure = computeExposure(flattenGaps(VALID_SAMPLE_ASSESSMENTS.water_good));
+assertEqual(waterExposure.pendingManualCostCount, 0, "water_good sample has nothing pending manual costing (no Other-tagged gaps)");
+assertTrue(waterExposure.totalHigh > 0, "water_good sample produces a nonzero total exposure");
+
+// The Energy "Good" sample includes a SupplyChain gap and costs cleanly.
+const energyGaps = flattenGaps(VALID_SAMPLE_ASSESSMENTS.energy_good);
+assertTrue(energyGaps.some((g) => g.category_tag === "SupplyChain"), "energy_good sample includes a SupplyChain-tagged gap");
+const energyExposure = computeExposure(energyGaps);
+assertTrue(energyExposure.totalHigh > 0, "energy_good sample produces a nonzero total exposure");
