@@ -14,6 +14,8 @@ export const CATEGORY_COST_MODEL = {
   Safety: { driver: "Safety incident / HSE compliance failure", basis: "Incident cost, regulatory penalty, remediation", low: 40000, high: 300000 },
   AssetLifecycle: { driver: "Asset failure / capital delivery slippage", basis: "Replacement cost, programme delay cost", low: 20000, high: 150000 },
   SupplyChain: { driver: "Vendor/supply disruption risk", basis: "Contract penalty, delay cost, remediation", low: 10000, high: 90000 },
+  // Extended per schema_version "1.2" — public sector procurement/probity risk.
+  Probity: { driver: "Procurement/probity breach or conflict of interest", basis: "Investigation cost, contract voidance, reputational damage", low: 30000, high: 200000 },
 };
 
 // severity_gov (inherited, immutable from App 1) scales the base range instead of

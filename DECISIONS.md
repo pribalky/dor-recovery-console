@@ -213,3 +213,33 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 **Why:** The JD requirement behind this ("translate complex analysis into concise, decision-ready recommendations") is a presentation problem, not a data problem — the underlying exposure/RAID computation is already correct and tested. Building a second export format on the same data, rather than a parallel computation path, means there's exactly one place (`financialTranslator.js`) that can get the numbers wrong, and the Health Card can't silently drift out of sync with the detailed Markdown export.
 
 **Trade-off:** The intervention mapping is a flat lookup with one generic fallback, not a rules engine — a tag with no specific mapping still gets a sensible default ("Escalate to Governance & Risk Committee for triage") rather than blocking the export, which matters more than mapping precision for a v1.
+
+---
+
+## 22. Health Card is rendered to the DOM, not just downloaded — closing the actual "PDF" path
+
+**Decision:** `js/ui/render.js`'s `renderHealthCardPreview()` renders `buildHealthCardData()`'s output as real HTML in an on-screen panel (`#health-card-preview`) when "Export Executive Health Card" is clicked, in addition to the Markdown download. A second, independent `@media print` scope (`.print-section-health-card`, toggled via a `body.printing-health-card` class set right before `window.print()`) lets "Print Health Card" print *only* that panel.
+
+**Why:** The original v1 only downloaded a `.md` file — "Markdown or PDF" only half-delivered, since a markdown file isn't a PDF and the page's print button only ever printed the Recovery Plan panel, never the Health Card's content (which was never in the DOM). A downloadable markdown file is a fine engineering artifact but not the actual C-suite-facing deliverable the feature is named for. `buildHealthCardData()` (added as part of this change, replacing the markdown-only `buildExecutiveHealthCard`'s internal logic) is the single source of truth both the Markdown export and this HTML preview consume, so the two presentations can't drift apart.
+
+**Trade-off:** Two independent print scopes (Recovery Plan vs. Health Card) toggled by a body class is more CSS/JS machinery than a single print button — justified because printing "whatever happens to be on screen" would be the wrong result for either audience (an engineer wants the Recovery Plan; an executive wants the one-page Health Card, not RAID tables mixed in).
+
+---
+
+## 23. RAID type is classified from severity_gov + category_tag, not hardcoded to Risk
+
+**Decision:** `js/config/raidTypeMap.js`'s `classifyRaidType(gap)` — `severity_gov === "High"` always yields `"R"` (Risk); otherwise `category_tag === "SupplyChain"` yields `"D"` (Dependency); everything else defaults to `"I"` (Issue). `seedRaidFromGaps()` (`js/engine/raid.js`) calls this per gap instead of hardcoding every seeded entry as `"R"`.
+
+**Why:** Every seeded entry being a Risk was a real understatement of what auto-classification should look like — a Med-severity process gap and a High-severity safety gap are not the same kind of thing, and treating them identically flattens the RAID log into "a list of risks" instead of an actual Risk/Issue/Dependency breakdown. High severity still always maps to Risk deliberately (a high-severity failure is a risk to the objective regardless of theme); the category-based split below that is coarse but principled: a vendor/supply gap is definitionally something you're *waiting on*, which is a Dependency, not a Risk or a generic Issue.
+
+**Trade-off:** `"A"` (Assumption) is never auto-generated — an assumption is asserted by a person about the world, not mechanically implied by a failed check, so forcing one would be dishonest. Only 1 of 11 category_tags (`SupplyChain`) gets its own type rule; every other non-High gap defaults to Issue. A finer-grained mapping is possible but wasn't justified by the data — most category_tags genuinely are "a live problem," which is what Issue means.
+
+---
+
+## 24. The gap-to-RAID link is now visible in the UI, not just present in data
+
+**Decision:** Each row in the Gap Analysis table shows a small `RAID: {type} · {status}` badge, built from a `raidByGapId` lookup (`Map<gap_id, RaidEntry>`) passed into `renderGapTable()` from `app.js`'s `recompute()`. It updates on every recompute, including after a RAID table edit.
+
+**Why:** `source_gap_id` has linked every seeded RAID entry back to its gap since the RAID module was first built (`DECISIONS.md` #7), but the link was only present in the data model — nothing in the UI ever showed it. A tool whose pitch is "automatically identifies a Risk or Issue from a failed check" needs that identification to be visible where the failed check itself is shown, not just discoverable by cross-referencing two tables by description text.
+
+**Trade-off:** None meaningful — the data already existed; this is a rendering-only addition reusing the existing `recompute()` cycle.

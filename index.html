@@ -136,15 +136,17 @@
       </form>
     </section>
 
-    <section class="panel print-section">
+    <section class="panel print-section-recovery">
       <h2>Executive Summary &amp; Recovery Plan</h2>
       <div id="recovery-plan" class="recovery-plan"></div>
       <div class="export-buttons no-print">
         <button id="export-md-btn" type="button">Export Markdown</button>
         <button id="export-health-card-btn" type="button">Export Executive Health Card</button>
-        <button type="button" onclick="window.print()">Print / Save as PDF</button>
+        <button id="print-recovery-btn" type="button">Print / Save as PDF</button>
       </div>
     </section>
+
+    <section id="health-card-preview" class="panel print-section-health-card" hidden></section>
   </main>
 
   <footer class="app-footer no-print">

@@ -21,7 +21,11 @@ export function renderSummaryBar(container, assessment) {
   `;
 }
 
-export function renderGapTable(tbody, costedGaps, manualCosts, handlers) {
+// raidByGapId: Map<gap_id, RaidEntry> — lets each gap row show a live badge for the
+// RAID entry it seeded, so the gap-to-RAID link (source_gap_id) is visible, not just
+// present in data. Updates on every recompute(), including after editing the RAID
+// table, since both render from the same state.
+export function renderGapTable(tbody, costedGaps, manualCosts, raidByGapId, handlers) {
   if (costedGaps.length === 0) {
     tbody.innerHTML = `<tr><td colspan="3" class="empty">No gaps in this assessment.</td></tr>`;
     return;
@@ -43,10 +47,15 @@ export function renderGapTable(tbody, costedGaps, manualCosts, handlers) {
           ${gap.cost.utilisationImpactPct ? `<span class="utilisation">${gap.cost.utilisationImpactPct}% utilisation</span>` : ""}
         `;
 
+      const raidEntry = raidByGapId?.get(gap.gap_id);
+      const raidBadge = raidEntry
+        ? `<span class="raid-link-badge">RAID: ${raidEntry.type} · ${raidEntry.status}</span>`
+        : "";
+
       return `
         <tr class="gap-row severity-${gap.severity_gov.toLowerCase()}">
           <td><span class="gap-severity">${gap.severity_gov}</span></td>
-          <td>${gap.description}<div class="gap-meta">${gap.pillar_name} · ${tag}</div></td>
+          <td>${gap.description}<div class="gap-meta">${gap.pillar_name} · ${tag} ${raidBadge}</div></td>
           <td>${costCell}</td>
         </tr>
       `;
@@ -145,4 +154,51 @@ export function renderRaidRollup(container, entries) {
 
 export function renderRecoveryPlan(container, steps) {
   container.innerHTML = `<ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>`;
+}
+
+// Renders buildHealthCardData()'s output as HTML (not the markdown string) so the
+// on-screen panel and the "Print Health Card" path both work from real DOM content,
+// not a downloaded .md file — see DECISIONS.md.
+export function renderHealthCardPreview(container, data) {
+  const rootCausesHtml = data.rootCauses.length
+    ? `<ol>${data.rootCauses
+        .map((g) => {
+          const tag = g.category_tag === "Other" ? g.category_tag_freetext : g.category_tag;
+          return `<li><strong>${g.description}</strong> <span class="gap-meta">${g.pillar_name} · ${tag}, ${g.severity_gov} severity — $${g.cost.low.toLocaleString()}–$${g.cost.high.toLocaleString()}</span></li>`;
+        })
+        .join("")}</ol>`
+    : `<p class="empty">No material root causes identified — programme is tracking to plan.</p>`;
+
+  const interventionsHtml = data.interventions.length
+    ? `<ol>${data.interventions.map((i) => `<li><strong>${i.text}</strong> — re: "${i.gapDescription}"</li>`).join("")}${data.recoverySteps
+        .map((s) => `<li>${s}</li>`)
+        .join("")}</ol>`
+    : `<p class="empty">No governance escalation required — proceed to steering committee sign-off.</p>`;
+
+  const escalationHtml = data.escalationItems.length
+    ? `<ul>${data.escalationItems.map((e) => `<li><strong>[${e.escalation_level}] ${e.description}</strong> <span class="gap-meta">${e.type}, ${e.status}</span></li>`).join("")}</ul>`
+    : "";
+
+  container.innerHTML = `
+    <h2>${data.featureName} — Strategy-to-Execution Health Card</h2>
+    <div class="summary-meta">
+      <span>TOM Feasibility Score: <strong>${data.overallScore}%</strong></span>
+      <span class="gate-badge gate-${data.gateDecision.toLowerCase()}">${data.gateDecision}</span>
+      <span>Total Financial Exposure: $${data.totalLow.toLocaleString()} – $${data.totalHigh.toLocaleString()}</span>
+    </div>
+    ${data.pendingManualCostCount > 0 ? `<p class="pending-flag">${data.pendingManualCostCount} item(s) pending manual costing — not yet included above.</p>` : ""}
+    ${data.utilisationImpactPct > 0 ? `<p class="utilisation-summary">Estimated utilisation impact: <strong>${data.utilisationImpactPct}%</strong> of a sprint's capacity.</p>` : ""}
+
+    <h3>Top 3 Root Causes of Operational Rework</h3>
+    ${rootCausesHtml}
+
+    <h3>Recommended Executive Actions &amp; Governance Interventions</h3>
+    ${interventionsHtml}
+
+    ${escalationHtml ? `<h3>Open Items Requiring Escalation Beyond the Delivery Team</h3>${escalationHtml}` : ""}
+
+    <div class="export-buttons no-print">
+      <button id="print-health-card-btn" type="button">Print Health Card</button>
+    </div>
+  `;
 }

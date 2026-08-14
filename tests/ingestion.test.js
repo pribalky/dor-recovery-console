@@ -2,19 +2,24 @@ import { assertEqual, assertTrue } from "./assert.js";
 import { ingestAssessment } from "../js/ingestion/validate.js";
 import { SAMPLE_EXPORTS } from "../js/config/sampleExports.js";
 
-for (const id of ["best", "good", "intentionally_off", "very_bad", "water_good", "energy_good"]) {
+for (const id of ["best", "good", "intentionally_off", "very_bad", "water_good", "energy_good", "public_sector_good"]) {
   const sample = SAMPLE_EXPORTS.find((s) => s.id === id);
   const { assessment, errors } = ingestAssessment(sample.raw);
   assertEqual(errors.length, 0, `valid sample "${id}" ingests with no errors`);
   assertTrue(Boolean(assessment), `valid sample "${id}" produces an assessment object`);
 }
 
-// schema_version "1.1" samples (Water/Energy) ingest cleanly alongside "1.0" ones —
-// backward compatibility, not a breaking bump.
+// schema_version "1.1" and "1.2" samples ingest cleanly alongside "1.0" ones —
+// progressive, backward-compatible extension, not a breaking bump each time.
 const waterGood = SAMPLE_EXPORTS.find((s) => s.id === "water_good");
 const { assessment: waterAssessment, errors: waterErrors } = ingestAssessment(waterGood.raw);
 assertEqual(waterErrors.length, 0, "schema_version 1.1 sample ingests with no errors");
 assertEqual(waterAssessment.schema_version, "1.1", "ingested assessment carries schema_version 1.1");
+
+const publicSectorGood = SAMPLE_EXPORTS.find((s) => s.id === "public_sector_good");
+const { assessment: publicSectorAssessment, errors: publicSectorErrors } = ingestAssessment(publicSectorGood.raw);
+assertEqual(publicSectorErrors.length, 0, "schema_version 1.2 sample ingests with no errors");
+assertEqual(publicSectorAssessment.schema_version, "1.2", "ingested assessment carries schema_version 1.2");
 
 const malformed = SAMPLE_EXPORTS.find((s) => s.id === "malformed");
 const malformedResult = ingestAssessment(malformed.raw);

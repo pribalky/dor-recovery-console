@@ -1,13 +1,17 @@
+import { classifyRaidType } from "../config/raidTypeMap.js";
+
 export const RAID_TYPES = ["R", "A", "I", "D"];
 export const RAID_STATUSES = ["Open", "Mitigating", "Closed"];
 export const ESCALATION_LEVELS = ["Team", "Programme", "Steering Committee", "Client Exec"];
 
-// One Risk entry per gap, auto-seeded from App 1's inherited data. severity_gov flows
-// in as the initial priority but is never mutated (DECISIONS.md #3).
+// One entry per gap, auto-seeded from App 1's inherited data. Type is classified from
+// severity_gov/category_tag (classifyRaidType) rather than always "R" — a failed
+// criterion can be a Risk, Issue, or Dependency, not automatically a Risk (DECISIONS.md).
+// severity_gov flows in as the initial priority but is never mutated (DECISIONS.md #3).
 export function seedRaidFromGaps(gaps, dateRaised) {
   return gaps.map((gap) => ({
     raid_id: `RAID-${gap.gap_id}`,
-    type: "R",
+    type: classifyRaidType(gap),
     description: gap.description,
     owner: "Unassigned",
     status: "Open",

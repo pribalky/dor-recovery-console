@@ -307,6 +307,16 @@ thead th {
   margin-top: 0.15rem;
 }
 
+.raid-link-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: var(--color-border);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
 .cost-range {
   font-weight: 600;
 }
@@ -421,7 +431,18 @@ thead th {
     padding: 0;
   }
 
-  .panel:not(.print-section) {
+  .panel:not(.print-section-recovery):not(.print-section-health-card) {
     display: none;
+  }
+
+  /* Two independent print targets, toggled by a body class set right before each
+     button's window.print() call — printing one never bleeds the other into the
+     page (see DECISIONS.md, "Executive Health Card" on-screen preview). */
+  body.printing-health-card .print-section-recovery {
+    display: none !important;
+  }
+
+  body:not(.printing-health-card) .print-section-health-card {
+    display: none !important;
   }
 }

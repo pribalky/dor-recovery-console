@@ -10,10 +10,10 @@ const REQUIRED_TOP_FIELDS = [
   "pillars",
 ];
 const VALID_GATE_DECISIONS = new Set(["APPROVED", "CONDITIONAL", "BLOCKED"]);
-// "1.1" is additive over "1.0" — same shape, extended category_tag enum (Safety/
-// AssetLifecycle/SupplyChain) for sector presets that need it. Both accepted so
-// older "1.0" exports keep working unchanged — see DECISIONS.md.
-const SUPPORTED_SCHEMA_VERSIONS = new Set(["1.0", "1.1"]);
+// "1.1" and "1.2" are additive over "1.0" — same shape, progressively extended
+// category_tag enum (1.1: Safety/AssetLifecycle/SupplyChain; 1.2: + Probity) for
+// sector presets that need it. All accepted so older exports keep working — DECISIONS.md.
+const SUPPORTED_SCHEMA_VERSIONS = new Set(["1.0", "1.1", "1.2"]);
 
 export function parseAssessmentJson(text) {
   try {

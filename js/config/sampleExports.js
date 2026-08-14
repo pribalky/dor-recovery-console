@@ -223,6 +223,37 @@ const energyGoodExport = {
   ],
 };
 
+// schema_version "1.2" sample — mirrors dor-gatekeeper's Public Sector preset,
+// exercising the Probity category_tag end to end through ingestion + financial
+// translation, on top of the 1.1 tags already covered by water/energy above.
+const publicSectorGoodExport = {
+  schema_version: "1.2",
+  assessment_id: "sample-public-sector-good-0000",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Sample: Citizen Services Digital Uplift",
+  overall_score: 96,
+  gate_decision: "APPROVED",
+  pillars: [
+    {
+      pillar_name: "People & Capability",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-PPL-5", description: "Knowledge transfer plan for outgoing contractors/consultants", severity_gov: "Low", category_tag: "NFR" },
+      ],
+    },
+    {
+      pillar_name: "Process & Workflow",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-PROC-5", description: "Citizen complaints / service feedback process integrated", severity_gov: "Low", category_tag: "NFR" },
+      ],
+    },
+    { pillar_name: "Data & Integration", pillar_score: 100, gaps: [] },
+    { pillar_name: "Technology & Infrastructure", pillar_score: 100, gaps: [] },
+    { pillar_name: "Governance & Compliance", pillar_score: 100, gaps: [] },
+  ],
+};
+
 // Deliberately invalid: not parseable JSON (missing comma after assessment_id).
 const malformedRaw = `{
   "schema_version": "1.0",
@@ -258,6 +289,7 @@ export const VALID_SAMPLE_ASSESSMENTS = {
   very_bad: veryBadExport,
   water_good: waterGoodExport,
   energy_good: energyGoodExport,
+  public_sector_good: publicSectorGoodExport,
 };
 
 export const SAMPLE_EXPORTS = [
@@ -267,6 +299,7 @@ export const SAMPLE_EXPORTS = [
   { id: "very_bad", label: "Very Bad — not ready (valid)", raw: JSON.stringify(veryBadExport, null, 2) },
   { id: "water_good", label: "Water Asset Transformation — Good (valid, schema 1.1)", raw: JSON.stringify(waterGoodExport, null, 2) },
   { id: "energy_good", label: "Energy Grid Operating Model — Good (valid, schema 1.1)", raw: JSON.stringify(energyGoodExport, null, 2) },
+  { id: "public_sector_good", label: "Public Sector — Good (valid, schema 1.2)", raw: JSON.stringify(publicSectorGoodExport, null, 2) },
   { id: "malformed", label: "Malformed JSON (invalid — tests parse error)", raw: malformedRaw },
   { id: "schema_invalid", label: "Schema-Invalid Export (invalid — tests validation errors)", raw: JSON.stringify(schemaInvalidExport, null, 2) },
 ];

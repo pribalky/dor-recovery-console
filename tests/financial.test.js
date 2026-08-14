@@ -100,3 +100,15 @@ const energyGaps = flattenGaps(VALID_SAMPLE_ASSESSMENTS.energy_good);
 assertTrue(energyGaps.some((g) => g.category_tag === "SupplyChain"), "energy_good sample includes a SupplyChain-tagged gap");
 const energyExposure = computeExposure(energyGaps);
 assertTrue(energyExposure.totalHigh > 0, "energy_good sample produces a nonzero total exposure");
+
+// Probity (schema_version 1.2, Public Sector) costs via the normal category lookup too.
+const probityGap = { gap_id: "GAP-TEST-PROBITY", severity_gov: "High", category_tag: "Probity" };
+const probityCost = computeGapCost(probityGap);
+assertEqual(probityCost.unmodeled, false, "Probity gap is costed, not treated as unmodeled");
+assertEqual(probityCost.low, CATEGORY_COST_MODEL.Probity.low, "High Probity gap costs at the full base low");
+assertEqual(probityCost.high, CATEGORY_COST_MODEL.Probity.high, "High Probity gap costs at the full base high");
+
+// The Public Sector "Good" sample (schema 1.2) costs cleanly end-to-end.
+const publicSectorExposure = computeExposure(flattenGaps(VALID_SAMPLE_ASSESSMENTS.public_sector_good));
+assertEqual(publicSectorExposure.pendingManualCostCount, 0, "public_sector_good sample has nothing pending manual costing (no Other-tagged gaps)");
+assertTrue(publicSectorExposure.totalHigh > 0, "public_sector_good sample produces a nonzero total exposure");

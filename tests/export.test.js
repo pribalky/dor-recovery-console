@@ -2,7 +2,7 @@ import { assertEqual, assertTrue } from "./assert.js";
 import { flattenGaps, computeExposure } from "../js/engine/financialTranslator.js";
 import { seedRaidFromGaps, createManualEntry } from "../js/engine/raid.js";
 import { buildMarkdownExport, buildRecoveryPlan, slugify, exportFilenameMd } from "../js/export/markdownExport.js";
-import { buildExecutiveHealthCard, exportFilenameHealthCard } from "../js/export/executiveHealthCard.js";
+import { buildExecutiveHealthCard, buildHealthCardData, exportFilenameHealthCard } from "../js/export/executiveHealthCard.js";
 import { interventionFor } from "../js/config/interventionMap.js";
 import { VALID_SAMPLE_ASSESSMENTS } from "../js/config/sampleExports.js";
 
@@ -64,3 +64,13 @@ assertEqual(
   "customer-support-chatbot_abc-123_health_card.md",
   "health card filename leads with the slugified feature name, then assessment_id"
 );
+
+// buildHealthCardData is the single source of truth consumed by both the Markdown
+// export above and the on-screen preview (renderHealthCardPreview) — confirm its
+// shape matches what the Markdown export reflects, so the two can't silently diverge.
+const healthCardData = buildHealthCardData(gappyAssessment, exposure, raidEntries);
+assertEqual(healthCardData.featureName, gappyAssessment.feature_name, "health card data carries the feature name");
+assertEqual(healthCardData.gateDecision, gappyAssessment.gate_decision, "health card data carries the gate decision");
+assertEqual(healthCardData.rootCauses.length, Math.min(3, exposure.gaps.filter((g) => !g.cost.unmodeled).length), "health card data's root causes match the same top-3-by-exposure logic as the Markdown export");
+assertEqual(healthCardData.interventions.length, healthCardData.rootCauses.length, "health card data has one intervention per root cause");
+assertTrue(Array.isArray(healthCardData.escalationItems), "health card data exposes escalationItems as an array");

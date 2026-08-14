@@ -4,7 +4,7 @@ import { flattenGaps, computeExposure } from "./engine/financialTranslator.js";
 import { seedRaidFromGaps, createManualEntry } from "./engine/raid.js";
 import { sortGapsBySeverity, sortGapsByExposure, sortGapsByRaidPriority } from "./engine/sort.js";
 import { buildMarkdownExport, buildRecoveryPlan, exportFilenameMd } from "./export/markdownExport.js";
-import { buildExecutiveHealthCard, exportFilenameHealthCard } from "./export/executiveHealthCard.js";
+import { buildExecutiveHealthCard, buildHealthCardData, exportFilenameHealthCard } from "./export/executiveHealthCard.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -14,6 +14,7 @@ import {
   renderRaidTable,
   renderRaidRollup,
   renderRecoveryPlan,
+  renderHealthCardPreview,
 } from "./ui/render.js";
 import { createInitialState, todayIso } from "./state.js";
 
@@ -35,6 +36,8 @@ const els = {
   recoveryPlan: document.getElementById("recovery-plan"),
   exportMdBtn: document.getElementById("export-md-btn"),
   exportHealthCardBtn: document.getElementById("export-health-card-btn"),
+  printRecoveryBtn: document.getElementById("print-recovery-btn"),
+  healthCardPreview: document.getElementById("health-card-preview"),
   resetBtn: document.getElementById("reset-btn"),
   raidForm: document.getElementById("raid-form"),
   assumpCapacity: document.getElementById("assump-capacity"),
@@ -77,8 +80,10 @@ function recompute() {
   else if (state.sortMode === "raid") sortedGaps = sortGapsByRaidPriority(exposure.gaps, state.raidEntries);
   else sortedGaps = sortGapsBySeverity(exposure.gaps);
 
+  const raidByGapId = new Map(state.raidEntries.filter((e) => e.source_gap_id).map((e) => [e.source_gap_id, e]));
+
   renderSummaryBar(els.summaryBar, state.assessment);
-  renderGapTable(els.gapTableBody, sortedGaps, state.manualCosts, { onManualCostChange: handleManualCostChange });
+  renderGapTable(els.gapTableBody, sortedGaps, state.manualCosts, raidByGapId, { onManualCostChange: handleManualCostChange });
   renderExposureSummary(els.exposureSummary, exposure);
   // Stable order (not re-sorted on every edit) so a row never jumps position
   // mid-edit-session — sortEntriesByPriority remains available for the gap-list
@@ -87,7 +92,23 @@ function recompute() {
   renderRaidRollup(els.raidRollup, state.raidEntries);
   renderRecoveryPlan(els.recoveryPlan, buildRecoveryPlan(state.assessment, exposure));
 
+  // Keep an already-open Health Card preview live too, so an edit (e.g. RAID status)
+  // made after generating it doesn't leave a stale preview on screen.
+  if (!els.healthCardPreview.hidden) {
+    renderHealthCard(exposure);
+  }
+
   return exposure;
+}
+
+function renderHealthCard(exposure) {
+  const data = buildHealthCardData(state.assessment, exposure, state.raidEntries);
+  renderHealthCardPreview(els.healthCardPreview, data);
+  const printBtn = document.getElementById("print-health-card-btn");
+  printBtn?.addEventListener("click", () => {
+    document.body.classList.add("printing-health-card");
+    window.print();
+  });
 }
 
 function handleRaidFieldChange(raidId, field, value) {
@@ -215,6 +236,21 @@ function init() {
     if (!exposure) return;
     const md = buildExecutiveHealthCard(state.assessment, exposure, state.raidEntries);
     downloadFile(exportFilenameHealthCard(state.assessment.feature_name, state.assessment.assessment_id), md, "text/markdown");
+
+    // Also render the on-screen preview so "Print Health Card" has real DOM content
+    // to print — a downloaded .md file alone can't be captured by window.print().
+    els.healthCardPreview.hidden = false;
+    renderHealthCard(exposure);
+    els.healthCardPreview.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  els.printRecoveryBtn.addEventListener("click", () => {
+    document.body.classList.remove("printing-health-card");
+    window.print();
+  });
+
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing-health-card");
   });
 
   els.resetBtn.addEventListener("click", () => {
@@ -225,6 +261,8 @@ function init() {
     els.assumpCapacity.value = state.assumptions.teamSprintCapacityHours;
     els.assumpScale.value = state.assumptions.costScale;
     els.consoleSection.hidden = true;
+    els.healthCardPreview.hidden = true;
+    els.healthCardPreview.innerHTML = "";
     showErrors(els.ingestErrors, []);
   });
 }
