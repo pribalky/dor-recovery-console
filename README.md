@@ -2,121 +2,226 @@
 
 **🔗 Live app: [pribalky.github.io/dor-recovery-console](https://pribalky.github.io/dor-recovery-console/)**
 
-App 2 in the two-app governance toolkit. Ingests [`dor-gatekeeper`](https://pribalky.github.io/dor-gatekeeper/)'s (App 1) JSON export and adds what App 1 deliberately excludes: financial exposure modeling, RAID tracking, escalation paths, and an executive-ready recovery brief.
+App 2 in a two-app governance toolkit. Ingests **[`dor-gatekeeper`](https://pribalky.github.io/dor-gatekeeper/)**'s (App 1) JSON export and adds what App 1 deliberately excludes: financial exposure modeling, RAID tracking, escalation paths, and executive-ready recovery reporting for anything that comes back CONDITIONAL/BLOCKED.
 
-Fully static. No backend, no build step, no npm install. Runs entirely in the browser and deploys straight to GitHub Pages.
+Fully static. **No backend, no database, no build step, no `npm install`.** Plain HTML/CSS/JavaScript (ES modules), runs entirely in the browser, deploys straight to GitHub Pages.
 
 ---
 
-## Architecture
+## Quick start
+
+```bash
+git clone https://github.com/pribalky/dor-recovery-console.git
+cd dor-recovery-console
+python3 -m http.server 8000   # any static file server works
+```
+
+Open `http://localhost:8000/`, then pick **"Best — fully ready"** or **"Very Bad — not ready"** from the sample dropdown and click **Validate & Load** to see it working end to end.
+
+```bash
+node tests/run.js   # run the test suite (no npm install needed)
+```
+
+Requires only a modern browser (ES modules) and Node.js ≥ 18 for the test runner. Opening `index.html` directly via `file://` will **not** work — ES module imports require an HTTP origin.
+
+---
+
+## How it works
 
 ```
 [ App 1 JSON Export ] ──► [ Ingestion & Validation ]
                                     │
-              ┌─────────────────────┼─────────────────────┐
-              ▼                     ▼                     ▼
-  [ Financial Translator ]   [ RAID Log + Escalation ]  [ Re-classification Toggle ]
-              │                     │                     │
-              └─────────────────────┴─────────────────────┘
+       ┌────────────────┬──────────┼──────────┬─────────────────┐
+       ▼                ▼          ▼          ▼                 ▼
+ [ Financial     [ RAID Log +  [ NFR Gateway  [ Rework Risk  [ Executive Summary
+  Translator ]    Escalation ]     View ]        Score ]      + Recovery Plan ]
+       │                │          │          │                 │
+       └────────────────┴──────────┴──────────┴─────────────────┘
                                     ▼
-                     [ Executive Summary + Recovery Plan ]
-                                    ▼
-                        [ Markdown / Print-to-PDF ]
+                [ Markdown / Health Card / ADR / Print-to-PDF ]
 ```
 
-Everything runs client-side against a single in-memory console state. No network calls, no server, nothing persisted beyond what you explicitly export. `severity_gov` and `category_tag`, inherited from the App 1 export, are never mutated (see `DECISIONS.md`).
+Everything runs client-side against a single in-memory console state (`js/state.js`). No network calls, no server, nothing persisted beyond what you explicitly export. `severity_gov` and `category_tag`, inherited from the App 1 export, are **never mutated** — this app only ever adds derived data alongside them (`DECISIONS.md`).
 
-## Folder Structure
+---
+
+## Project structure
 
 ```
 dor-recovery-console/
-├── index.html                     # single-page app shell
-├── assets/css/styles.css          # styling + @media print rules for the exec summary
+├── index.html                        # single-page app shell
+├── assets/css/styles.css             # styling + @media print rules for exec exports
 ├── js/
-│   ├── app.js                      # entry point: wires state + DOM + event listeners
-│   ├── state.js                    # in-memory console state factory
+│   ├── app.js                        # entry point — wires state, DOM, and every event listener
+│   ├── state.js                      # in-memory console state factory
 │   ├── config/
-│   │   ├── costModel.js            # category_tag → cost bands (12 tags), severity multipliers, rework-hours model
-│   │   ├── interventionMap.js      # category_tag → suggested governance intervention (Health Card)
-│   │   ├── raidTypeMap.js          # severity_gov/category_tag → auto-seeded RAID type (Risk/Issue/Dependency)
-│   │   ├── nfrGatewayMap.js        # category_tag → one of the 4 NFR Gateways (or unmapped)
-│   │   ├── reworkRiskConfig.js     # severity → rework-risk points, tier thresholds, remediation pathway reference
-│   │   └── sampleExports.js        # 9 bundled sample App 1 exports (7 valid + 2 deliberately invalid)
+│   │   ├── costModel.js              # category_tag → cost bands (12 tags), severity multipliers, rework-hours model
+│   │   ├── interventionMap.js        # category_tag → suggested governance intervention (Health Card)
+│   │   ├── raidTypeMap.js            # severity_gov/category_tag → auto-seeded RAID type (Risk/Issue/Dependency)
+│   │   ├── nfrGatewayMap.js          # category_tag → one of 4 NFR Gateways (or intentionally unmapped)
+│   │   ├── reworkRiskConfig.js       # severity → rework-risk points, tier thresholds, remediation reference table
+│   │   └── sampleExports.js          # 9 bundled sample App 1 exports (7 valid + 2 deliberately invalid)
 │   ├── ingestion/
-│   │   └── validate.js             # parses + validates an App 1 export (accepts schema_version 1.0/1.1/1.2)
+│   │   └── validate.js               # parses + validates an App 1 export (schema_version, required fields, category_tag enum)
 │   ├── engine/
-│   │   ├── financialTranslator.js  # per-gap cost range + utilisation %, total exposure
-│   │   ├── raid.js                 # seeds RAID from gaps (type via raidTypeMap), manual entries, rollups
-│   │   ├── sort.js                 # 3 sort lenses over the same gap list
-│   │   ├── nfrGateway.js           # rolls exposure up by NFR Gateway
-│   │   └── reworkRisk.js           # computes the rework-risk score and tier
+│   │   ├── financialTranslator.js    # per-gap cost range + utilisation %, total exposure
+│   │   ├── raid.js                   # seeds RAID from gaps (type via raidTypeMap), manual entries, rollups
+│   │   ├── sort.js                   # 3 sort lenses over the same gap list
+│   │   ├── nfrGateway.js             # rolls exposure up by NFR Gateway
+│   │   └── reworkRisk.js             # computes the rework-risk score and tier
 │   ├── export/
-│   │   ├── markdownExport.js       # executive summary + auto-generated recovery plan
-│   │   ├── executiveHealthCard.js  # Strategy-to-Execution Health Card export
-│   │   └── adrExport.js            # Status/Context/Decision/Consequences ADR draft export
+│   │   ├── markdownExport.js         # executive summary + auto-generated recovery plan
+│   │   ├── executiveHealthCard.js    # Strategy-to-Execution Health Card export
+│   │   └── adrExport.js              # Status/Context/Decision/Consequences ADR draft export
 │   └── ui/
-│       ├── validation.js           # manual RAID entry / manual cost field validation
-│       └── render.js                # renders summary, gap table, RAID table, exec summary, NFR/rework-risk panels
+│       ├── validation.js             # manual RAID entry / manual cost field validation
+│       └── render.js                 # renders every panel: summary, gap table, RAID table, exec summary, NFR/rework-risk panels
 ├── tests/
-│   ├── assert.js                    # ~30-line zero-dependency assertion helper
-│   ├── ingestion.test.js            # all 9 sample exports (valid + invalid), schema 1.0/1.1/1.2
-│   ├── financial.test.js            # cost model + severity multiplier + utilisation math, all 12 tags
-│   ├── raid.test.js                 # RAID seeding + type classification, rollups, all 3 sort lenses
-│   ├── export.test.js               # recovery plan + markdown + Health Card export content
-│   ├── nfrGateway.test.js           # gateway mapping + rollup, hand-verified against a sample
-│   ├── reworkRisk.test.js           # score/tier boundaries + hand-verified sample scores
-│   ├── adrExport.test.js            # ADR draft section content
-│   └── run.js                       # runs all *.test.js, exits non-zero on failure
-├── DECISIONS.md                    # shared rationale doc (cross-referenced with App 1)
-└── README.md
+│   ├── assert.js                     # ~30-line zero-dependency assertion helper
+│   ├── ingestion.test.js             # all 9 sample exports (valid + invalid), schema 1.0/1.1/1.2
+│   ├── financial.test.js             # cost model + severity multiplier + utilisation math, all 12 tags
+│   ├── raid.test.js                  # RAID seeding + type classification, rollups, all 3 sort lenses
+│   ├── export.test.js                # recovery plan + markdown + Health Card export content
+│   ├── nfrGateway.test.js            # gateway mapping + rollup, hand-verified against a sample
+│   ├── reworkRisk.test.js            # score/tier boundaries + hand-verified sample scores
+│   ├── adrExport.test.js             # ADR draft section content
+│   └── run.js                        # runs every *.test.js, exits non-zero on failure
+├── DECISIONS.md                      # why things are built this way (shared with App 1)
+└── README.md                         # you are here
 ```
 
-## Using It
+**Rule of thumb for where new code goes:** `config/` is data (no logic, no DOM), `engine/` is pure functions over that data (no DOM), `export/` turns engine output into a downloadable string, `ui/` is the only layer allowed to touch the DOM. `app.js` is the sole place that wires them together.
 
-1. **Ingest** — paste an App 1 JSON export, upload a `.json` file, or pick one of the 9 bundled samples from the dropdown (7 valid — the original 4 baseline samples plus 1 "Good" sample each for the Water, Energy, and Public Sector presets, `schema_version: "1.1"`/`"1.2"`; 2 deliberately invalid, to show the rejection path). Click **Validate & Load**.
-2. **Gap Analysis & Financial Impact** — every gap from the export is auto-costed by `category_tag` and `severity_gov`, across all 12 supported tags (the original 8, plus `Safety`/`AssetLifecycle`/`SupplyChain` for the regulated-infrastructure presets and `Probity` for Public Sector). `Other`-tagged gaps show "requires manual costing" with two input fields — enter a range and it folds into the total. Each row also shows a live `RAID: {type} · {status}` badge linking it to the RAID entry it seeded (`DECISIONS.md` #24).
-3. **Assumptions** — two adjustable controls sit above the gap table: **Team Sprint Capacity (hours)** (the utilisation-% denominator) and **Cost Model Scale (×)** (multiplies every category's $ band). Use these to normalize the illustrative figures to your own team size/engagement without editing code — manually-entered `Other` costs are never rescaled. See `DECISIONS.md` #11, #17.
-4. **Sort** — toggle the gap list between Severity (default, inherited from App 1), $ Exposure, and RAID Priority. All three are lenses on the same list, not separate data.
-5. **RAID Log** — one entry is auto-seeded per gap, classified as a Risk, Issue, or Dependency from its `severity_gov`/`category_tag` (`DECISIONS.md` #23) — not always a Risk. Owner, Status, Target Resolution, and Escalation Level are editable directly in the table for every entry, seeded or manual (Type/Description/Date Raised stay fixed). Add Assumptions/Issues/Dependencies manually via the form below the table.
-6. **Executive Summary & Recovery Plan** — auto-compiled from the above: total exposure, utilisation impact, top exposure gaps, RAID rollups, and a recovery plan. Export as Markdown, or use **Print / Save as PDF** (native browser print, no PDF library).
-7. **Executive Strategy-to-Execution Health Card** — a separate, decision-ready export reusing the same exposure/RAID data: TOM Feasibility Score, Top 3 Root Causes of Operational Rework, and Recommended Executive Actions & Governance Interventions (mapped per `category_tag` — e.g. `Safety` → "Convene Safety Case Review Board"). Clicking it also renders an on-screen preview with its own **Print Health Card** button, so "Save as PDF" actually captures the Health Card's content, not the Recovery Plan panel (`DECISIONS.md` #22).
-8. **NFR Gateway Exposure** — the same gaps regrouped by PRD-defined gateway (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar, with gap count and $ exposure per gateway. `Lineage`/`Probity` gaps are deliberately excluded from all 4 (flagged via a count, not silently dropped) — see `DECISIONS.md` #25.
-9. **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers, with tier-specific escalation guidance and a reference table of 3 remediation pathways (Contain / Notify & Remediate / Block & Escalate) — reference only, not auto-selected per gap (`DECISIONS.md` #27).
-10. **Export ADR Draft** — a standard Status/Context/Decision/Consequences architecture decision record, auto-populated from the top exposure gaps and the same recovery-plan steps used elsewhere, ready to drop into an `adr/` folder as a starting draft.
+---
 
-## Running Locally
+## Core concepts
 
-ES module imports require an HTTP origin — opening `index.html` directly via `file://` will fail in Chrome/Firefox. Serve the folder with any static server, e.g.:
+| Concept | Shape | Where |
+|---|---|---|
+| **Assessment** | The ingested App 1 export, unmodified | `state.assessment` |
+| **Gap** | `{ gap_id, pillar_name, description, severity_gov, category_tag, category_tag_freetext? }`, inherited from App 1 verbatim | `flattenGaps(assessment)` in `financialTranslator.js` |
+| **Costed gap** | A gap + `{ cost: { low, high, unmodeled, manual, utilisationImpactPct? } }` | `computeExposure(gaps, manualCosts, assumptions)` |
+| **Exposure** | `{ gaps, totalLow, totalHigh, pendingManualCostCount, utilisationImpactPct }` — the single source every export/panel reads from | same |
+| **RAID entry** | `{ raid_id, type, description, owner, status, priority, date_raised, target_resolution_date, escalation_level, source_gap_id }` | `seedRaidFromGaps(gaps)` + manual entries in `engine/raid.js` |
 
-```bash
-python3 -m http.server 8000
-# then open http://localhost:8000/
-```
+`category_tag` drives every downstream view via a small lookup table per concern — this is the core extension pattern in this app:
 
-## Running Tests
+| Lookup | File | Maps `category_tag` to |
+|---|---|---|
+| Cost | `config/costModel.js` | `{ driver, basis, low, high }` |
+| RAID type | `config/raidTypeMap.js` | `"R" \| "I" \| "D"` (severity `High` always wins as `"R"`) |
+| Governance intervention | `config/interventionMap.js` | a suggested Health Card action |
+| NFR Gateway | `config/nfrGatewayMap.js` | one of 4 gateways, or unmapped |
+
+**Assumptions are adjustable, not hardcoded:** Team Sprint Capacity (hours) and Cost Model Scale (×) normalize the illustrative cost bands to your own team/engagement without editing code. Manually-entered "Other" costs are never rescaled by either.
+
+---
+
+## Features
+
+**Ingestion**
+- Paste, upload, or pick from 9 bundled sample exports (7 valid across `schema_version` 1.0/1.1/1.2, 2 deliberately invalid to exercise the rejection path). Every rejection reason is specific and visible — malformed JSON, unsupported `schema_version`, missing required field, invalid `gate_decision`, unrecognised `category_tag`, missing `category_tag_freetext` on an `"Other"` gap.
+
+**Financial exposure**
+- Every gap auto-costed by `category_tag` × `severity_gov` across all 12 supported tags. `"Other"`-tagged gaps require manual cost entry — never silently costed at zero.
+- Adjustable Team Sprint Capacity and Cost Model Scale controls.
+- 3 sort lenses over the same gap list: Severity (default), $ Exposure, RAID Priority.
+
+**RAID log**
+- One entry auto-seeded per gap, classified as Risk/Issue/Dependency from `severity_gov`/`category_tag` (not always "Risk"). Owner, Status, Target Resolution, and Escalation Level are editable inline; add Assumptions/Issues/Dependencies manually.
+- Every gap row shows a live `RAID: {type} · {status}` badge linking back to the RAID entry it seeded.
+
+**Cross-cutting views**
+- **NFR Gateway Exposure** — the same gaps regrouped by 4 PRD-defined gateways (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar. `Lineage`/`Probity` gaps are intentionally excluded from all 4 and flagged via an explicit count, not silently dropped.
+- **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways (Contain / Notify & Remediate / Block & Escalate) — reference only, never auto-selected.
+
+**Executive exports**
+- **Markdown recovery brief** — total exposure, top exposure gaps, RAID rollups, auto-generated recovery plan.
+- **Executive Strategy-to-Execution Health Card** — TOM Feasibility Score, Top 3 Root Causes of Operational Rework, and mapped governance interventions. Renders an on-screen preview with its own **Print Health Card** button, so "Save as PDF" captures the Health Card, not the Recovery Plan panel.
+- **ADR draft** — a standard Status/Context/Decision/Consequences record, auto-populated from the top exposure gaps and the same recovery-plan steps.
+- **Print / Save as PDF** — native browser print, no PDF library.
+
+---
+
+## Extending this app
+
+### Add a `category_tag` (matching a new one added in `dor-gatekeeper`)
+1. Add an entry to `js/config/costModel.js`'s `CATEGORY_COST_MODEL`: `{ driver, basis, low, high }`. `KNOWN_CATEGORY_TAGS` (used by ingestion validation) derives from this object's keys automatically.
+2. Add the new `schema_version` to `SUPPORTED_SCHEMA_VERSIONS` in `js/ingestion/validate.js`, or the export gets rejected outright.
+3. Optionally map it in `nfrGatewayMap.js` (leave unmapped if it genuinely isn't one of the 4 gateways), `raidTypeMap.js` (default is `"I"` Issue unless you add a rule), and `interventionMap.js` (falls back to a generic intervention if omitted).
+4. If the tag also needs a utilisation-% (rework hours) figure, add it to `REWORK_HOURS_MODEL` and to the `UTILISATION_TAGS` set — otherwise it's skipped, not zeroed.
+
+### Add a new bundled sample export
+Add a fixture to `js/config/sampleExports.js`: an object matching App 1's export shape, added to both `VALID_SAMPLE_ASSESSMENTS` (keyed by id, used directly in tests) and `SAMPLE_EXPORTS` (the dropdown list, `{ id, label, raw: JSON.stringify(...) }`).
+
+### Add a new cross-cutting view (like NFR Gateway or Rework Risk)
+1. Config: a plain lookup or thresholds object in `js/config/`, no logic.
+2. Engine: a pure function in `js/engine/` that takes already-computed `exposure`/`gaps` and returns a derived rollup — never recompute cost/exposure from scratch.
+3. UI: a render function in `js/ui/render.js`, called from `app.js`'s `recompute()`.
+4. Test: hand-calculate the expected numbers against one of the 9 bundled samples and assert against that — see `tests/nfrGateway.test.js` / `tests/reworkRisk.test.js` for the pattern.
+
+### Add a new export format
+Follow the pattern in `js/export/*.js`: a pure `buildXyz(assessment, exposure, ...)` returning a string (reuse `topExposureGaps`/`buildRecoveryPlan` from `markdownExport.js` rather than recomputing), plus `exportFilenameXyz(featureName, assessmentId)`. Wire a button into `index.html` and call `downloadFile(...)` from `app.js`. Add `tests/xyzExport.test.js` and import it from `tests/run.js`.
+
+---
+
+## Testing
 
 ```bash
 node tests/run.js
 ```
 
-No `npm install` required — `package.json` only sets `"type": "module"` so Node's native ESM loader can import the same files the browser uses.
+Zero-dependency custom runner (`tests/assert.js` + `tests/run.js`, an independent copy of App 1's — the two repos are deliberately decoupled). Every `*.test.js` in `tests/` is imported by `run.js`; add new ones there.
+
+---
 
 ## Deploying to GitHub Pages
 
-No build step, so no Actions workflow is required:
+No build step, so no Actions workflow is required for the app itself:
 
 1. Push to `main`.
 2. Repo Settings → Pages → **Deploy from a branch** → branch `main`, folder `/ (root)`.
-3. Save. The app is live at `https://<owner>.github.io/dor-recovery-console/` within a minute or two.
+3. Save. Live at `https://<owner>.github.io/dor-recovery-console/` within a minute or two.
 
-`.nojekyll` is included so GitHub Pages serves the `js/`/`assets/` folders as-is without Jekyll processing.
+`.nojekyll` is included so GitHub Pages serves `js/`/`assets/` as-is without Jekyll processing.
 
-## Data Contract (App 1 Ingestion)
+---
 
-Expects the JSON shape App 1 exports: `schema_version` (`"1.0"`, `"1.1"`, or `"1.2"` — each additive, same shape, progressively adding `category_tag` values), `assessment_id`, `assessment_date`, `feature_name`, `overall_score`, `gate_decision`, and `pillars[]` (each with `pillar_name`, `pillar_score`, and `gaps[]` carrying `gap_id`, `description`, `severity_gov`, `category_tag`, and `category_tag_freetext` when `category_tag` is `"Other"`). Malformed JSON, an unsupported `schema_version`, a missing required field, an invalid `gate_decision`, an unrecognised `category_tag`, or a missing `category_tag_freetext` on an `Other` gap are all rejected with a specific, visible error message — never silently. See `DECISIONS.md` #19 for why each bump is additive rather than a breaking change.
+## Data contract (App 1 ingestion)
+
+Expects the JSON shape App 1 exports:
+
+```json
+{
+  "schema_version": "1.0",
+  "assessment_id": "…",
+  "assessment_date": "…",
+  "feature_name": "…",
+  "overall_score": 82.5,
+  "gate_decision": "CONDITIONAL",
+  "pillars": [
+    {
+      "pillar_name": "…",
+      "pillar_score": 70,
+      "gaps": [
+        { "gap_id": "…", "description": "…", "severity_gov": "High", "category_tag": "PII" }
+      ]
+    }
+  ]
+}
+```
+
+`schema_version` `"1.0"`/`"1.1"`/`"1.2"` are all accepted — each additive, same shape, progressively extending the `category_tag` enum. Malformed JSON, an unsupported `schema_version`, a missing required field, an invalid `gate_decision`, an unrecognised `category_tag`, or a missing `category_tag_freetext` on an `"Other"` gap are all rejected with a specific, visible error — never silently.
 
 Cost bands in `js/config/costModel.js` are illustrative placeholders, not real actuarial or contractual figures — see `DECISIONS.md` #11, #20.
 
-## Out of Scope
+---
 
-Re-scoring App 1's governance/architecture criteria, real-time API billing telemetry, automated policy/CI-CD enforcement, and actual bid/proposal or CoP tooling — see `DECISIONS.md` for the reasoning.
+## Related docs
+
+- **`DECISIONS.md`** — the "why," including trade-offs, for every non-obvious choice in this repo (numbered, cross-referenced with App 1).
+- **[`dor-gatekeeper`](https://github.com/pribalky/dor-gatekeeper)** — the upstream app this one ingests from.
+
+## Out of scope
+
+Re-scoring App 1's governance/architecture criteria, real-time API billing telemetry, automated policy/CI-CD enforcement (that's App 1's job), and actual bid/proposal or CoP tooling. See `DECISIONS.md`'s roadmap entry for the full list of PRD items deliberately deferred because they require a backend.
