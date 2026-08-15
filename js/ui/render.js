@@ -1,4 +1,5 @@
 import { RAID_TYPES, RAID_STATUSES, ESCALATION_LEVELS, rollupByTypeAndStatus, rollupByEscalationAndStatus } from "../engine/raid.js";
+import { REMEDIATION_PATHWAYS } from "../config/reworkRiskConfig.js";
 
 function optionsHtml(values, selected) {
   return values.map((v) => `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`).join("");
@@ -154,6 +155,55 @@ export function renderRaidRollup(container, entries) {
 
 export function renderRecoveryPlan(container, steps) {
   container.innerHTML = `<ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>`;
+}
+
+export function renderNfrGatewayPanel(container, rollup) {
+  const rows = Object.entries(rollup.byGateway)
+    .map(
+      ([gateway, data]) => `
+      <tr>
+        <td>${gateway}</td>
+        <td>${data.gapCount}</td>
+        <td>$${data.exposureLow.toLocaleString()} – $${data.exposureHigh.toLocaleString()}</td>
+      </tr>`
+    )
+    .join("");
+
+  container.innerHTML = `
+    <table class="nfr-gateway-table">
+      <thead><tr><th>Gateway</th><th>Gaps</th><th>$ Exposure</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${rollup.unmappedCount > 0 ? `<p class="pending-flag">${rollup.unmappedCount} gap(s) use a category_tag outside the 4 gateways (e.g. Lineage, Probity) and are not shown above.</p>` : ""}
+  `;
+}
+
+export function renderReworkRiskPanel(container, { score, tier, escalationText }) {
+  const pathwaysRows = REMEDIATION_PATHWAYS.map(
+    (p) => `
+    <tr>
+      <td>${p.option}</td>
+      <td>${p.trigger}</td>
+      <td>${p.mechanism}</td>
+      <td>${p.impact}</td>
+    </tr>`
+  ).join("");
+
+  container.innerHTML = `
+    <div class="rework-risk-summary rework-tier-${tier.toLowerCase()}">
+      <span class="rework-score">${score}</span>
+      <span class="rework-tier">${tier} risk</span>
+    </div>
+    <p class="rework-escalation">${escalationText}</p>
+    <h3>Remediation Pathway Reference</h3>
+    <p class="section-note">Reference only — not auto-selected. Which option applies depends on the reason for drift, which requires a human judgement call.</p>
+    <div class="table-scroll">
+      <table class="remediation-table">
+        <thead><tr><th>Option</th><th>Trigger</th><th>Mechanism</th><th>Time/Cost Impact</th></tr></thead>
+        <tbody>${pathwaysRows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 // Renders buildHealthCardData()'s output as HTML (not the markdown string) so the

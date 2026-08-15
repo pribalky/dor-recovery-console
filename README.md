@@ -39,25 +39,33 @@ dor-recovery-console/
 │   │   ├── costModel.js            # category_tag → cost bands (12 tags), severity multipliers, rework-hours model
 │   │   ├── interventionMap.js      # category_tag → suggested governance intervention (Health Card)
 │   │   ├── raidTypeMap.js          # severity_gov/category_tag → auto-seeded RAID type (Risk/Issue/Dependency)
+│   │   ├── nfrGatewayMap.js        # category_tag → one of the 4 NFR Gateways (or unmapped)
+│   │   ├── reworkRiskConfig.js     # severity → rework-risk points, tier thresholds, remediation pathway reference
 │   │   └── sampleExports.js        # 9 bundled sample App 1 exports (7 valid + 2 deliberately invalid)
 │   ├── ingestion/
 │   │   └── validate.js             # parses + validates an App 1 export (accepts schema_version 1.0/1.1/1.2)
 │   ├── engine/
 │   │   ├── financialTranslator.js  # per-gap cost range + utilisation %, total exposure
 │   │   ├── raid.js                 # seeds RAID from gaps (type via raidTypeMap), manual entries, rollups
-│   │   └── sort.js                 # 3 sort lenses over the same gap list
+│   │   ├── sort.js                 # 3 sort lenses over the same gap list
+│   │   ├── nfrGateway.js           # rolls exposure up by NFR Gateway
+│   │   └── reworkRisk.js           # computes the rework-risk score and tier
 │   ├── export/
 │   │   ├── markdownExport.js       # executive summary + auto-generated recovery plan
-│   │   └── executiveHealthCard.js  # Strategy-to-Execution Health Card export
+│   │   ├── executiveHealthCard.js  # Strategy-to-Execution Health Card export
+│   │   └── adrExport.js            # Status/Context/Decision/Consequences ADR draft export
 │   └── ui/
 │       ├── validation.js           # manual RAID entry / manual cost field validation
-│       └── render.js                # renders summary, gap table, RAID table, exec summary
+│       └── render.js                # renders summary, gap table, RAID table, exec summary, NFR/rework-risk panels
 ├── tests/
 │   ├── assert.js                    # ~30-line zero-dependency assertion helper
 │   ├── ingestion.test.js            # all 9 sample exports (valid + invalid), schema 1.0/1.1/1.2
 │   ├── financial.test.js            # cost model + severity multiplier + utilisation math, all 12 tags
 │   ├── raid.test.js                 # RAID seeding + type classification, rollups, all 3 sort lenses
 │   ├── export.test.js               # recovery plan + markdown + Health Card export content
+│   ├── nfrGateway.test.js           # gateway mapping + rollup, hand-verified against a sample
+│   ├── reworkRisk.test.js           # score/tier boundaries + hand-verified sample scores
+│   ├── adrExport.test.js            # ADR draft section content
 │   └── run.js                       # runs all *.test.js, exits non-zero on failure
 ├── DECISIONS.md                    # shared rationale doc (cross-referenced with App 1)
 └── README.md
@@ -72,6 +80,9 @@ dor-recovery-console/
 5. **RAID Log** — one entry is auto-seeded per gap, classified as a Risk, Issue, or Dependency from its `severity_gov`/`category_tag` (`DECISIONS.md` #23) — not always a Risk. Owner, Status, Target Resolution, and Escalation Level are editable directly in the table for every entry, seeded or manual (Type/Description/Date Raised stay fixed). Add Assumptions/Issues/Dependencies manually via the form below the table.
 6. **Executive Summary & Recovery Plan** — auto-compiled from the above: total exposure, utilisation impact, top exposure gaps, RAID rollups, and a recovery plan. Export as Markdown, or use **Print / Save as PDF** (native browser print, no PDF library).
 7. **Executive Strategy-to-Execution Health Card** — a separate, decision-ready export reusing the same exposure/RAID data: TOM Feasibility Score, Top 3 Root Causes of Operational Rework, and Recommended Executive Actions & Governance Interventions (mapped per `category_tag` — e.g. `Safety` → "Convene Safety Case Review Board"). Clicking it also renders an on-screen preview with its own **Print Health Card** button, so "Save as PDF" actually captures the Health Card's content, not the Recovery Plan panel (`DECISIONS.md` #22).
+8. **NFR Gateway Exposure** — the same gaps regrouped by PRD-defined gateway (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar, with gap count and $ exposure per gateway. `Lineage`/`Probity` gaps are deliberately excluded from all 4 (flagged via a count, not silently dropped) — see `DECISIONS.md` #25.
+9. **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers, with tier-specific escalation guidance and a reference table of 3 remediation pathways (Contain / Notify & Remediate / Block & Escalate) — reference only, not auto-selected per gap (`DECISIONS.md` #27).
+10. **Export ADR Draft** — a standard Status/Context/Decision/Consequences architecture decision record, auto-populated from the top exposure gaps and the same recovery-plan steps used elsewhere, ready to drop into an `adr/` folder as a starting draft.
 
 ## Running Locally
 

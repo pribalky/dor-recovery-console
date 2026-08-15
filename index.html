@@ -136,12 +136,25 @@
       </form>
     </section>
 
+    <section class="panel">
+      <h2>NFR Gateway Exposure</h2>
+      <p class="section-note">Cross-cutting view of the same gaps, grouped by the 4 NFR Gateways rather than by pillar — derived from existing category_tag data, no additional tagging.</p>
+      <div id="nfr-gateway-panel" class="table-scroll"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Rework Risk &amp; Remediation</h2>
+      <p class="section-note">Score sums severity points across open gaps (High 10 / Med 5 / Low 2); tier boundaries and the remediation pathway reference are documented in <code>DECISIONS.md</code>.</p>
+      <div id="rework-risk-panel"></div>
+    </section>
+
     <section class="panel print-section-recovery">
       <h2>Executive Summary &amp; Recovery Plan</h2>
       <div id="recovery-plan" class="recovery-plan"></div>
       <div class="export-buttons no-print">
         <button id="export-md-btn" type="button">Export Markdown</button>
         <button id="export-health-card-btn" type="button">Export Executive Health Card</button>
+        <button id="export-adr-btn" type="button">Export ADR Draft</button>
         <button id="print-recovery-btn" type="button">Print / Save as PDF</button>
       </div>
     </section>

@@ -5,6 +5,9 @@ import { seedRaidFromGaps, createManualEntry } from "./engine/raid.js";
 import { sortGapsBySeverity, sortGapsByExposure, sortGapsByRaidPriority } from "./engine/sort.js";
 import { buildMarkdownExport, buildRecoveryPlan, exportFilenameMd } from "./export/markdownExport.js";
 import { buildExecutiveHealthCard, buildHealthCardData, exportFilenameHealthCard } from "./export/executiveHealthCard.js";
+import { buildAdrDraft, exportFilenameAdr } from "./export/adrExport.js";
+import { rollupByGateway } from "./engine/nfrGateway.js";
+import { computeReworkRiskScore, classifyReworkTier, escalationTextForTier } from "./engine/reworkRisk.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -15,6 +18,8 @@ import {
   renderRaidRollup,
   renderRecoveryPlan,
   renderHealthCardPreview,
+  renderNfrGatewayPanel,
+  renderReworkRiskPanel,
 } from "./ui/render.js";
 import { createInitialState, todayIso } from "./state.js";
 
@@ -34,8 +39,11 @@ const els = {
   raidTableBody: document.getElementById("raid-table-body"),
   raidRollup: document.getElementById("raid-rollup"),
   recoveryPlan: document.getElementById("recovery-plan"),
+  nfrGatewayPanel: document.getElementById("nfr-gateway-panel"),
+  reworkRiskPanel: document.getElementById("rework-risk-panel"),
   exportMdBtn: document.getElementById("export-md-btn"),
   exportHealthCardBtn: document.getElementById("export-health-card-btn"),
+  exportAdrBtn: document.getElementById("export-adr-btn"),
   printRecoveryBtn: document.getElementById("print-recovery-btn"),
   healthCardPreview: document.getElementById("health-card-preview"),
   resetBtn: document.getElementById("reset-btn"),
@@ -91,6 +99,12 @@ function recompute() {
   renderRaidTable(els.raidTableBody, state.raidEntries, { onFieldChange: handleRaidFieldChange });
   renderRaidRollup(els.raidRollup, state.raidEntries);
   renderRecoveryPlan(els.recoveryPlan, buildRecoveryPlan(state.assessment, exposure));
+
+  renderNfrGatewayPanel(els.nfrGatewayPanel, rollupByGateway(exposure));
+
+  const reworkScore = computeReworkRiskScore(gaps);
+  const reworkTier = classifyReworkTier(reworkScore);
+  renderReworkRiskPanel(els.reworkRiskPanel, { score: reworkScore, tier: reworkTier, escalationText: escalationTextForTier(reworkTier) });
 
   // Keep an already-open Health Card preview live too, so an edit (e.g. RAID status)
   // made after generating it doesn't leave a stale preview on screen.
@@ -242,6 +256,13 @@ function init() {
     els.healthCardPreview.hidden = false;
     renderHealthCard(exposure);
     els.healthCardPreview.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  els.exportAdrBtn.addEventListener("click", () => {
+    const exposure = recompute();
+    if (!exposure) return;
+    const md = buildAdrDraft(state.assessment, exposure);
+    downloadFile(exportFilenameAdr(state.assessment.feature_name, state.assessment.assessment_id), md, "text/markdown");
   });
 
   els.printRecoveryBtn.addEventListener("click", () => {

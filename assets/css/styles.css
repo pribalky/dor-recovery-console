@@ -404,6 +404,42 @@ thead th {
   margin-top: 1rem;
 }
 
+.section-note {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  margin: 0 0 0.75rem;
+}
+
+.rework-risk-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.rework-score {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.rework-tier {
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--color-text-muted);
+}
+
+.rework-tier-low .rework-tier { background: var(--color-approved); }
+.rework-tier-medium .rework-tier { background: var(--color-conditional); }
+.rework-tier-high .rework-tier { background: var(--color-blocked); }
+
+.rework-escalation {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
 .app-footer {
   max-width: 1200px;
   margin: 0 auto;

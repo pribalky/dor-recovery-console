@@ -243,3 +243,43 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 **Why:** `source_gap_id` has linked every seeded RAID entry back to its gap since the RAID module was first built (`DECISIONS.md` #7), but the link was only present in the data model — nothing in the UI ever showed it. A tool whose pitch is "automatically identifies a Risk or Issue from a failed check" needs that identification to be visible where the failed check itself is shown, not just discoverable by cross-referencing two tables by description text.
 
 **Trade-off:** None meaningful — the data already existed; this is a rendering-only addition reusing the existing `recompute()` cycle.
+
+---
+
+## 25. NFR Gateway Exposure is a derived cross-cutting view, not new checklist data
+
+**Decision:** `js/config/nfrGatewayMap.js` maps each `category_tag` to one of PRD §4's 4 NFR Gateways (`Fallback`/`Safety`/`AssetLifecycle`/`SupplyChain` → Resilience & Failure Mode; `RateLimit` → Cost & Resource Limit; `PII`/`Consent`/`HITL`/`Other` → Security & OWASP; `NFR` → Performance & Scale). `Lineage` and `Probity` are deliberately left unmapped — `gatewayFor()` returns `null` rather than a fallback gateway. `js/engine/nfrGateway.js`'s `rollupByGateway(exposure)` rolls the already-computed exposure data up by gateway; the new "NFR Gateway Exposure" panel shows gap count and $ exposure per gateway.
+
+**Why:** This reuses the same `category_tag` data every other view in this app already consumes — no new tagging step, no risk of the gateway view drifting from the gap/RAID/exposure data. Leaving Lineage/Probity unmapped (rather than dumping them into the nearest-sounding gateway) keeps the 4 gateways meaning what the PRD says they mean; data-governance and procurement-probity risk are real categories but not one of these 4.
+
+**Trade-off:** 2 of the (now) 12 category_tags contribute to no gateway total — `rollupByGateway`'s `unmappedCount` surfaces this explicitly in the panel rather than silently under-counting, but a reader has to know to look for that note.
+
+---
+
+## 26. ADR draft generator reuses the Recovery Plan's steps, not a separate narrative
+
+**Decision:** `js/export/adrExport.js`'s `buildAdrDraft(assessment, exposure)` produces a standard Status/Context/Decision/Consequences ADR, populating Context from the top-3 exposure gaps (`topExposureGaps`, already shared with the Markdown export and Health Card) and Decision directly from `buildRecoveryPlan()`'s steps — not a reimplementation of "what to do next."
+
+**Why:** An ADR's Decision section and the Recovery Plan are the same underlying decision, described for two different audiences (architecture record vs. delivery brief). Generating both from one function means they can't silently diverge on what the actual recommended path is.
+
+**Trade-off:** The ADR's prose is generic/templated rather than bespoke to the specific architectural question at hand — appropriate for a first draft a human edits before finalizing, not a substitute for actually writing the ADR's reasoning.
+
+---
+
+## 27. Rework Risk Score is an authored formula, not derived from the PRD (which only gives tier boundaries)
+
+**Decision:** `js/config/reworkRiskConfig.js` defines `SEVERITY_POINTS = { High: 10, Med: 5, Low: 2 }` and sums them per gap (`computeReworkRiskScore`) to produce a score, classified into Low/Medium/High tiers at `TIER_THRESHOLDS = { medium: 15, high: 35 }`. The same file also carries a static Option A (Contain) / B (Notify & Remediate) / C (Block & Escalate) reference table, transcribed from PRD §3.3, shown in the new "Rework Risk & Remediation" panel as reference material — not auto-selected per gap.
+
+**Why:** PRD §3.2/3.3 specify the tier *boundaries* and the 3 remediation options' triggers/mechanisms/impacts, but not the score formula underneath the boundaries — a straight point-sum by severity is the simplest formula that produces a sensible ordering (more/higher-severity gaps → higher score) without inventing hidden weighting the PRD never specified. This is the same "illustrative, not invented from nowhere" discipline applied to `costModel.js`'s cost bands.
+
+**Trade-off:** The remediation pathway table is reference-only, not automatically matched to a specific gap or score — the PRD ties each option to the *reason* for drift (contained vs. cross-team vs. contract-breaking), which this app has no data to infer. A human still has to pick the applicable option; auto-selecting one from severity alone would be a false precision the underlying data doesn't support.
+
+---
+
+## 28. V2.0 items deliberately deferred — require a backend
+
+**Decision:** The following PRD v2.0 features are documented here rather than built, because each requires infrastructure this project's `DECISIONS.md` #8/#10 deliberately excludes (a backend, a database, or an OAuth app). Full list and per-item rationale is also in `dor-gatekeeper`'s `DECISIONS.md` #28 (shared, cross-app roadmap): passive webhook ingestion, continuous passive drift detection, Jira/ADO write-back, auto-revert/auto-schedule/auto-ticket actions, real static/dynamic code analysis for Blast-Radius/Resource Boundary profiling, multi-tenancy, persistent cross-session team dashboards, and closed-loop self-tuning of DoR weights.
+
+**Why:** Same reasoning as App 1's #28 — building any of these "lite" inside a static app would mean silently faking a capability, which is worse than not building it. This app's own exposure/RAID/recovery-plan computation stays real and tested; what's deferred is only the backend-requiring automation layer around it.
+
+**Trade-off:** None of the above ships. If real usage demands any of these, it's a deliberate architectural decision to add a backend — not something to bolt onto the static app piecemeal.
