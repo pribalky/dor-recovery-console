@@ -43,14 +43,17 @@ Requires only a modern browser (ES modules) and Node.js ≥ 18 for the test runn
 
 Everything runs client-side against a single in-memory console state (`js/state.js`). No network calls, no server, nothing persisted beyond what you explicitly export. `severity_gov` and `category_tag`, inherited from the App 1 export, are **never mutated** — this app only ever adds derived data alongside them (`DECISIONS.md`).
 
+The page itself is the same **"Tabbed Spread"** layout as App 1: a persistent sticky `<aside>` (summary + every export/print button) beside a `<main>` tab bar (Gap Analysis & Financial Impact, RAID Log, NFR Gateway Exposure, Rework Risk & Remediation, Recovery Plan) — themed as **"Ledger"** (warm paper, ink-navy/oxblood, `IBMPlexSerif`/`InstrumentSans`/`IBMPlexMono`). See `DECISIONS.md` #29.
+
 ---
 
 ## Project structure
 
 ```
 dor-recovery-console/
-├── index.html                        # single-page app shell
-├── assets/css/styles.css             # styling + @media print rules for exec exports
+├── index.html                        # single-page app shell (Tabbed Spread: aside + tab-nav/tab-panels)
+├── assets/css/styles.css             # Ledger design tokens + @font-face + @media print rules for exec exports
+├── assets/fonts/                     # IBMPlexSerif/InstrumentSans/IBMPlexMono, Regular+Bold each
 ├── js/
 │   ├── app.js                        # entry point — wires state, DOM, and every event listener
 │   ├── state.js                      # in-memory console state factory

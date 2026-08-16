@@ -50,7 +50,36 @@ const els = {
   raidForm: document.getElementById("raid-form"),
   assumpCapacity: document.getElementById("assump-capacity"),
   assumpScale: document.getElementById("assump-scale"),
+  tabButtons: document.querySelectorAll(".tab-nav [role='tab']"),
+  tabPanels: document.querySelectorAll(".tab-panel"),
 };
+
+function switchTab(tabId) {
+  els.tabButtons.forEach((btn) => {
+    const isActive = btn.dataset.tab === tabId;
+    btn.setAttribute("aria-selected", String(isActive));
+    btn.tabIndex = isActive ? 0 : -1;
+  });
+  els.tabPanels.forEach((panel) => {
+    const isActive = panel.id === `tab-${tabId}`;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+}
+
+// Left/Right arrow keys move focus between tabs and activate the newly focused one,
+// matching the standard ARIA tabs keyboard pattern (native <button>s already give
+// Tab/Enter/Space for free) — same pattern as dor-gatekeeper's app.js.
+function handleTabKeydown(event) {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+  const buttons = Array.from(els.tabButtons);
+  const currentIndex = buttons.indexOf(event.target);
+  if (currentIndex === -1) return;
+  const delta = event.key === "ArrowRight" ? 1 : -1;
+  const next = buttons[(currentIndex + delta + buttons.length) % buttons.length];
+  next.focus();
+  switchTab(next.dataset.tab);
+}
 
 function populateSampleSelect() {
   els.sampleSelect.innerHTML =
@@ -266,8 +295,16 @@ function init() {
   });
 
   els.printRecoveryBtn.addEventListener("click", () => {
+    // The Recovery Plan tab must be the one revealed for print, regardless of which
+    // tab is on screen when this button (in the persistent aside) is clicked.
+    switchTab("recovery");
     document.body.classList.remove("printing-health-card");
     window.print();
+  });
+
+  els.tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+    btn.addEventListener("keydown", handleTabKeydown);
   });
 
   window.addEventListener("afterprint", () => {

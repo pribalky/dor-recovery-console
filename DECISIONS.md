@@ -283,3 +283,15 @@ This file is cross-referenced from both repos (`dor-gatekeeper` and `dor-recover
 **Why:** Same reasoning as App 1's #28 — building any of these "lite" inside a static app would mean silently faking a capability, which is worse than not building it. This app's own exposure/RAID/recovery-plan computation stays real and tested; what's deferred is only the backend-requiring automation layer around it.
 
 **Trade-off:** None of the above ships. If real usage demands any of these, it's a deliberate architectural decision to add a backend — not something to bolt onto the static app piecemeal.
+
+---
+
+## 29. Visual/structural redesign: Ledger identity + Tabbed Spread layout, matching App 1's
+
+**Decision:** Re-themed to "Ledger" (warm ivory paper, ink-navy/oxblood accents, `IBMPlexSerif`/`InstrumentSans`/`IBMPlexMono`, ruled rows, double-rule stamped badges — own copy of the fonts under `assets/fonts/`, per the repo-decoupling discipline) and restructured to "Tabbed Spread": a persistent sticky `<aside>` (summary info from `#summary-bar`, plus every export/print button — moved out of `.print-section-recovery`, which previously held both the narrative *and* the buttons) beside a `<main>` tab bar with 5 panes (Gap Analysis & Financial Impact — now also home to the sort controls, previously a separate global section — RAID Log, NFR Gateway Exposure, Rework Risk & Remediation, Recovery Plan). This mirrors `dor-gatekeeper`'s `DECISIONS.md` #30 exactly — same tokens, same layout pattern, confirmed by the same comparison artifacts, applied independently to each repo's own markup/CSS/JS (no shared file, per #1-2).
+
+Every existing element `id` was preserved — `app.js`'s lookups needed zero changes beyond the new tab-switching module. The `#health-card-preview` panel deliberately stays *outside* the tab shell (a transient, on-demand generated preview, not a persistent working tab), and its existing dual `@media print` scoping (#22) is preserved. One real behavioral fix was required by the restructuring: the "Print / Save as PDF" button now lives in the aside, reachable from *any* tab, but only the Recovery Plan tab's content should ever be captured by `window.print()` — so the button's handler now calls `switchTab("recovery")` before `window.print()`, guaranteeing `#tab-recovery` is unhidden regardless of which tab was on screen when it was clicked.
+
+**Why:** Same reasoning as App 1 — the visual treatment had never actually been decided on, just accumulated. Keeping the redesign confined to presentation (no engine/export logic touched) meant the existing 158-test suite could verify nothing broke behaviorally, while a headless-browser pass verified the structural change itself (including the print-tab-switch fix, which has no unit-test surface — it's a DOM interaction).
+
+**Trade-off:** Same as App 1's #30 — a large, single-purpose commit, deliberately free of new features.

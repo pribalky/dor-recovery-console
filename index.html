@@ -39,128 +39,154 @@
 
   <div id="ingest-errors" class="errors-region no-print" role="alert"></div>
 
-  <main id="console-section" class="app-main" hidden>
-    <div id="summary-bar" class="summary-bar"></div>
-
-    <section class="sort-section no-print">
-      <span class="sort-label">Sort gaps by:</span>
-      <button class="sort-btn active" type="button" data-sort="severity">Severity (default)</button>
-      <button class="sort-btn" type="button" data-sort="exposure">$ Exposure</button>
-      <button class="sort-btn" type="button" data-sort="raid">RAID Priority</button>
-    </section>
-
-    <section class="panel">
-      <h2>Gap Analysis &amp; Financial Impact</h2>
-
-      <div class="assumptions-panel no-print">
-        <div class="field">
-          <label for="assump-capacity">Team sprint capacity (hours)</label>
-          <input type="number" id="assump-capacity" min="1" step="1" value="480" />
+  <div id="console-section" hidden>
+    <div class="app-shell">
+      <main class="shell-main">
+        <div class="tab-nav no-print" role="tablist" aria-label="Console sections">
+          <button type="button" role="tab" id="tab-btn-gaps" aria-controls="tab-gaps" aria-selected="true" data-tab="gaps">Gap Analysis &amp; Financial Impact</button>
+          <button type="button" role="tab" id="tab-btn-raid" aria-controls="tab-raid" aria-selected="false" data-tab="raid" tabindex="-1">RAID Log</button>
+          <button type="button" role="tab" id="tab-btn-nfr" aria-controls="tab-nfr" aria-selected="false" data-tab="nfr" tabindex="-1">NFR Gateway Exposure</button>
+          <button type="button" role="tab" id="tab-btn-rework" aria-controls="tab-rework" aria-selected="false" data-tab="rework" tabindex="-1">Rework Risk &amp; Remediation</button>
+          <button type="button" role="tab" id="tab-btn-recovery" aria-controls="tab-recovery" aria-selected="false" data-tab="recovery" tabindex="-1">Recovery Plan</button>
         </div>
-        <div class="field">
-          <label for="assump-scale">Cost model scale (×)</label>
-          <input type="number" id="assump-scale" min="0.1" step="0.1" value="1" />
-        </div>
-        <p class="assumptions-note">Normalize the illustrative cost bands and utilisation estimate to your own team size / engagement — see <code>DECISIONS.md</code>. Manually-entered "Other" costs are never rescaled.</p>
-      </div>
 
-      <div class="table-scroll">
-        <table class="gap-table">
-          <thead>
-            <tr><th>Severity</th><th>Gap</th><th>Cost / Utilisation</th></tr>
-          </thead>
-          <tbody id="gap-table-body"></tbody>
-        </table>
-      </div>
-      <h3>Total Financial Exposure</h3>
-      <div id="exposure-summary" class="exposure-summary"></div>
-    </section>
+        <div class="tab-panels">
+          <div class="tab-panel is-active" id="tab-gaps" role="tabpanel" aria-labelledby="tab-btn-gaps">
+            <section class="panel">
+              <h2>Gap Analysis &amp; Financial Impact</h2>
 
-    <section class="panel">
-      <h2>RAID Log</h2>
-      <div class="table-scroll">
-        <table class="raid-table">
-          <thead>
-            <tr><th>Type</th><th>Description</th><th>Owner</th><th>Status</th><th>Raised</th><th>Target</th><th>Escalation</th></tr>
-          </thead>
-          <tbody id="raid-table-body"></tbody>
-        </table>
-      </div>
+              <div class="assumptions-panel no-print">
+                <div class="field">
+                  <label for="assump-capacity">Team sprint capacity (hours)</label>
+                  <input type="number" id="assump-capacity" min="1" step="1" value="480" />
+                </div>
+                <div class="field">
+                  <label for="assump-scale">Cost model scale (×)</label>
+                  <input type="number" id="assump-scale" min="0.1" step="0.1" value="1" />
+                </div>
+                <p class="assumptions-note">Normalize the illustrative cost bands and utilisation estimate to your own team size / engagement — see <code>DECISIONS.md</code>. Manually-entered "Other" costs are never rescaled.</p>
+              </div>
 
-      <div id="raid-rollup" class="raid-rollup"></div>
+              <div class="sort-section no-print">
+                <span class="sort-label">Sort gaps by:</span>
+                <button class="sort-btn active" type="button" data-sort="severity">Severity (default)</button>
+                <button class="sort-btn" type="button" data-sort="exposure">$ Exposure</button>
+                <button class="sort-btn" type="button" data-sort="raid">RAID Priority</button>
+              </div>
 
-      <h3>Add RAID Entry</h3>
-      <form id="raid-form" class="raid-form no-print">
-        <div class="field">
-          <label for="raid-type">Type</label>
-          <select id="raid-type" name="type">
-            <option value="A">Assumption</option>
-            <option value="I">Issue</option>
-            <option value="D">Dependency</option>
-          </select>
-        </div>
-        <div class="field field-wide">
-          <label for="raid-description">Description</label>
-          <input type="text" id="raid-description" name="description" placeholder="e.g. Vendor SLA assumed to hold through migration" />
-        </div>
-        <div class="field">
-          <label for="raid-owner">Owner</label>
-          <input type="text" id="raid-owner" name="owner" placeholder="Unassigned" />
-        </div>
-        <div class="field">
-          <label for="raid-status">Status</label>
-          <select id="raid-status" name="status">
-            <option value="Open">Open</option>
-            <option value="Mitigating">Mitigating</option>
-            <option value="Closed">Closed</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="raid-date-raised">Date Raised</label>
-          <input type="date" id="raid-date-raised" name="dateRaised" />
-        </div>
-        <div class="field">
-          <label for="raid-target-date">Target Resolution</label>
-          <input type="date" id="raid-target-date" name="targetResolutionDate" />
-        </div>
-        <div class="field">
-          <label for="raid-escalation">Escalation Level</label>
-          <select id="raid-escalation" name="escalationLevel">
-            <option value="Team">Team</option>
-            <option value="Programme">Programme</option>
-            <option value="Steering Committee">Steering Committee</option>
-            <option value="Client Exec">Client Exec</option>
-          </select>
-        </div>
-        <button type="submit">Add Entry</button>
-      </form>
-    </section>
+              <div class="table-scroll">
+                <table class="gap-table">
+                  <thead>
+                    <tr><th>Severity</th><th>Gap</th><th>Cost / Utilisation</th></tr>
+                  </thead>
+                  <tbody id="gap-table-body"></tbody>
+                </table>
+              </div>
+              <h3>Total Financial Exposure</h3>
+              <div id="exposure-summary" class="exposure-summary"></div>
+            </section>
+          </div>
 
-    <section class="panel">
-      <h2>NFR Gateway Exposure</h2>
-      <p class="section-note">Cross-cutting view of the same gaps, grouped by the 4 NFR Gateways rather than by pillar — derived from existing category_tag data, no additional tagging.</p>
-      <div id="nfr-gateway-panel" class="table-scroll"></div>
-    </section>
+          <div class="tab-panel" id="tab-raid" role="tabpanel" aria-labelledby="tab-btn-raid" hidden>
+            <section class="panel">
+              <h2>RAID Log</h2>
+              <div class="table-scroll">
+                <table class="raid-table">
+                  <thead>
+                    <tr><th>Type</th><th>Description</th><th>Owner</th><th>Status</th><th>Raised</th><th>Target</th><th>Escalation</th></tr>
+                  </thead>
+                  <tbody id="raid-table-body"></tbody>
+                </table>
+              </div>
 
-    <section class="panel">
-      <h2>Rework Risk &amp; Remediation</h2>
-      <p class="section-note">Score sums severity points across open gaps (High 10 / Med 5 / Low 2); tier boundaries and the remediation pathway reference are documented in <code>DECISIONS.md</code>.</p>
-      <div id="rework-risk-panel"></div>
-    </section>
+              <div id="raid-rollup" class="raid-rollup"></div>
 
-    <section class="panel print-section-recovery">
-      <h2>Executive Summary &amp; Recovery Plan</h2>
-      <div id="recovery-plan" class="recovery-plan"></div>
-      <div class="export-buttons no-print">
-        <button id="export-md-btn" type="button">Export Markdown</button>
-        <button id="export-health-card-btn" type="button">Export Executive Health Card</button>
-        <button id="export-adr-btn" type="button">Export ADR Draft</button>
-        <button id="print-recovery-btn" type="button">Print / Save as PDF</button>
-      </div>
-    </section>
+              <h3>Add RAID Entry</h3>
+              <form id="raid-form" class="raid-form no-print">
+                <div class="field">
+                  <label for="raid-type">Type</label>
+                  <select id="raid-type" name="type">
+                    <option value="A">Assumption</option>
+                    <option value="I">Issue</option>
+                    <option value="D">Dependency</option>
+                  </select>
+                </div>
+                <div class="field field-wide">
+                  <label for="raid-description">Description</label>
+                  <input type="text" id="raid-description" name="description" placeholder="e.g. Vendor SLA assumed to hold through migration" />
+                </div>
+                <div class="field">
+                  <label for="raid-owner">Owner</label>
+                  <input type="text" id="raid-owner" name="owner" placeholder="Unassigned" />
+                </div>
+                <div class="field">
+                  <label for="raid-status">Status</label>
+                  <select id="raid-status" name="status">
+                    <option value="Open">Open</option>
+                    <option value="Mitigating">Mitigating</option>
+                    <option value="Closed">Closed</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="raid-date-raised">Date Raised</label>
+                  <input type="date" id="raid-date-raised" name="dateRaised" />
+                </div>
+                <div class="field">
+                  <label for="raid-target-date">Target Resolution</label>
+                  <input type="date" id="raid-target-date" name="targetResolutionDate" />
+                </div>
+                <div class="field">
+                  <label for="raid-escalation">Escalation Level</label>
+                  <select id="raid-escalation" name="escalationLevel">
+                    <option value="Team">Team</option>
+                    <option value="Programme">Programme</option>
+                    <option value="Steering Committee">Steering Committee</option>
+                    <option value="Client Exec">Client Exec</option>
+                  </select>
+                </div>
+                <button type="submit">Add Entry</button>
+              </form>
+            </section>
+          </div>
+
+          <div class="tab-panel" id="tab-nfr" role="tabpanel" aria-labelledby="tab-btn-nfr" hidden>
+            <section class="panel">
+              <h2>NFR Gateway Exposure</h2>
+              <p class="section-note">Cross-cutting view of the same gaps, grouped by the 4 NFR Gateways rather than by pillar — derived from existing category_tag data, no additional tagging.</p>
+              <div id="nfr-gateway-panel" class="table-scroll"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel" id="tab-rework" role="tabpanel" aria-labelledby="tab-btn-rework" hidden>
+            <section class="panel">
+              <h2>Rework Risk &amp; Remediation</h2>
+              <p class="section-note">Score sums severity points across open gaps (High 10 / Med 5 / Low 2); tier boundaries and the remediation pathway reference are documented in <code>DECISIONS.md</code>.</p>
+              <div id="rework-risk-panel"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel" id="tab-recovery" role="tabpanel" aria-labelledby="tab-btn-recovery" hidden>
+            <section class="panel print-section-recovery">
+              <h2>Executive Summary &amp; Recovery Plan</h2>
+              <div id="recovery-plan" class="recovery-plan"></div>
+            </section>
+          </div>
+        </div>
+      </main>
+
+      <aside class="app-aside no-print">
+        <div id="summary-bar" class="summary-bar"></div>
+        <div class="export-buttons">
+          <button id="export-md-btn" type="button">Export Markdown</button>
+          <button id="export-health-card-btn" type="button">Export Executive Health Card</button>
+          <button id="export-adr-btn" type="button">Export ADR Draft</button>
+          <button id="print-recovery-btn" type="button" class="secondary">Print / Save as PDF</button>
+        </div>
+      </aside>
+    </div>
 
     <section id="health-card-preview" class="panel print-section-health-card" hidden></section>
-  </main>
+  </div>
 
   <footer class="app-footer no-print">
     <p>Upstream tool: <a href="https://pribalky.github.io/dor-gatekeeper/">dor-gatekeeper</a> (DoR Gatekeeper) — export its JSON to load here.</p>
