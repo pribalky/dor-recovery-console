@@ -8,6 +8,7 @@ import { buildExecutiveHealthCard, buildHealthCardData, exportFilenameHealthCard
 import { buildAdrDraft, exportFilenameAdr } from "./export/adrExport.js";
 import { rollupByGateway } from "./engine/nfrGateway.js";
 import { computeReworkRiskScore, classifyReworkTier, escalationTextForTier } from "./engine/reworkRisk.js";
+import { compareGapSets } from "./engine/driftCompare.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -20,6 +21,7 @@ import {
   renderHealthCardPreview,
   renderNfrGatewayPanel,
   renderReworkRiskPanel,
+  renderDriftResult,
 } from "./ui/render.js";
 import { createInitialState, todayIso } from "./state.js";
 
@@ -50,6 +52,11 @@ const els = {
   raidForm: document.getElementById("raid-form"),
   assumpCapacity: document.getElementById("assump-capacity"),
   assumpScale: document.getElementById("assump-scale"),
+  driftBaselineInput: document.getElementById("drift-baseline-input"),
+  driftBaselineFile: document.getElementById("drift-baseline-file"),
+  driftCompareBtn: document.getElementById("drift-compare-btn"),
+  driftErrors: document.getElementById("drift-errors"),
+  driftResult: document.getElementById("drift-result"),
   tabButtons: document.querySelectorAll(".tab-nav [role='tab']"),
   tabPanels: document.querySelectorAll(".tab-panel"),
 };
@@ -217,6 +224,31 @@ function handleRaidFormSubmit(event) {
   recompute();
 }
 
+function handleDriftCompare() {
+  const text = els.driftBaselineInput.value.trim();
+  if (!text) {
+    showErrors(els.driftErrors, ["Paste or upload a Baseline export first."]);
+    return;
+  }
+  if (!state.assessment) {
+    showErrors(els.driftErrors, ["Load a current assessment above before comparing."]);
+    return;
+  }
+
+  const { assessment: baseline, errors } = ingestAssessment(text);
+  if (!baseline) {
+    showErrors(els.driftErrors, errors);
+    els.driftResult.innerHTML = "";
+    return;
+  }
+  showErrors(els.driftErrors, []);
+
+  const baselineGaps = flattenGaps(baseline);
+  const currentGaps = flattenGaps(state.assessment);
+  const drift = compareGapSets(baselineGaps, currentGaps);
+  renderDriftResult(els.driftResult, drift);
+}
+
 function downloadFile(filename, content, mime) {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -307,6 +339,18 @@ function init() {
     btn.addEventListener("keydown", handleTabKeydown);
   });
 
+  els.driftBaselineFile.addEventListener("change", () => {
+    const file = els.driftBaselineFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      els.driftBaselineInput.value = reader.result;
+    };
+    reader.readAsText(file);
+  });
+
+  els.driftCompareBtn.addEventListener("click", handleDriftCompare);
+
   window.addEventListener("afterprint", () => {
     document.body.classList.remove("printing-health-card");
   });
@@ -321,6 +365,10 @@ function init() {
     els.consoleSection.hidden = true;
     els.healthCardPreview.hidden = true;
     els.healthCardPreview.innerHTML = "";
+    els.driftBaselineInput.value = "";
+    els.driftBaselineFile.value = "";
+    els.driftResult.innerHTML = "";
+    showErrors(els.driftErrors, []);
     showErrors(els.ingestErrors, []);
   });
 }

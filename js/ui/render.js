@@ -5,6 +5,38 @@ function optionsHtml(values, selected) {
   return values.map((v) => `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`).join("");
 }
 
+export function renderDriftResult(container, drift) {
+  const { newGaps, resolvedGaps, severityChanged } = drift;
+
+  if (newGaps.length === 0 && resolvedGaps.length === 0 && severityChanged.length === 0) {
+    container.innerHTML = `<p class="empty">No drift — the current assessment matches the baseline exactly.</p>`;
+    return;
+  }
+
+  const section = (title, items, renderItem) => `
+    <h3>${title} (${items.length})</h3>
+    ${items.length ? `<ul class="gap-list">${items.map(renderItem).join("")}</ul>` : `<p class="empty">None.</p>`}
+  `;
+
+  container.innerHTML = `
+    ${section(
+      "New Since Baseline",
+      newGaps,
+      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${g.description}</span></li>`
+    )}
+    ${section(
+      "Resolved Since Baseline",
+      resolvedGaps,
+      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${g.description}</span></li>`
+    )}
+    ${section(
+      "Severity Changed",
+      severityChanged,
+      (c) => `<li class="gap-row"><span>${c.description}</span><span class="gap-meta">${c.from} → ${c.to}</span></li>`
+    )}
+  `;
+}
+
 export function showErrors(container, errors) {
   container.innerHTML = errors.length
     ? `<ul class="errors">${errors.map((e) => `<li>${e}</li>`).join("")}</ul>`

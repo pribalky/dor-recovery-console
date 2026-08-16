@@ -71,14 +71,15 @@ dor-recovery-console/
 │   │   ├── raid.js                   # seeds RAID from gaps (type via raidTypeMap), manual entries, rollups
 │   │   ├── sort.js                   # 3 sort lenses over the same gap list
 │   │   ├── nfrGateway.js             # rolls exposure up by NFR Gateway
-│   │   └── reworkRisk.js             # computes the rework-risk score and tier
+│   │   ├── reworkRisk.js             # computes the rework-risk score and tier
+│   │   └── driftCompare.js           # matches two gap lists by gap_id: new / resolved / severity-changed
 │   ├── export/
 │   │   ├── markdownExport.js         # executive summary + auto-generated recovery plan
 │   │   ├── executiveHealthCard.js    # Strategy-to-Execution Health Card export
 │   │   └── adrExport.js              # Status/Context/Decision/Consequences ADR draft export
 │   └── ui/
 │       ├── validation.js             # manual RAID entry / manual cost field validation
-│       └── render.js                 # renders every panel: summary, gap table, RAID table, exec summary, NFR/rework-risk panels
+│       └── render.js                 # renders every panel: summary, gap table, RAID table, exec summary, NFR/rework-risk/drift panels
 ├── tests/
 │   ├── assert.js                     # ~30-line zero-dependency assertion helper
 │   ├── ingestion.test.js             # all 9 sample exports (valid + invalid), schema 1.0/1.1/1.2
@@ -88,6 +89,7 @@ dor-recovery-console/
 │   ├── nfrGateway.test.js            # gateway mapping + rollup, hand-verified against a sample
 │   ├── reworkRisk.test.js            # score/tier boundaries + hand-verified sample scores
 │   ├── adrExport.test.js             # ADR draft section content
+│   ├── driftCompare.test.js          # new/resolved/severity-changed classification, hand-built pairs
 │   └── run.js                        # runs every *.test.js, exits non-zero on failure
 ├── DECISIONS.md                      # why things are built this way (shared with App 1)
 └── README.md                         # you are here
@@ -137,6 +139,7 @@ dor-recovery-console/
 **Cross-cutting views**
 - **NFR Gateway Exposure** — the same gaps regrouped by 4 PRD-defined gateways (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar. `Lineage`/`Probity` gaps are intentionally excluded from all 4 and flagged via an explicit count, not silently dropped.
 - **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways (Contain / Notify & Remediate / Block & Escalate) — reference only, never auto-selected.
+- **Baseline Drift** — the State Sync Bridge's receiving half: paste/upload a `dor-gatekeeper` "Baseline" export from earlier alongside the currently-loaded "current" assessment, and see what changed — New Since Baseline / Resolved Since Baseline / Severity Changed, matched by `gap_id`. On-demand, one-shot comparison, not a live sync (`DECISIONS.md` #30).
 
 **Executive exports**
 - **Markdown recovery brief** — total exposure, top exposure gaps, RAID rollups, auto-generated recovery plan.

@@ -562,6 +562,26 @@ thead th {
   padding-left: 1.2rem;
 }
 
+.gap-list {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  font-size: 0.87rem;
+}
+
+.gap-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.gap-row:first-child {
+  border-top: none;
+}
+
 .section-note {
   color: var(--color-text-muted);
   font-size: 0.85rem;

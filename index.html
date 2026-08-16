@@ -48,6 +48,7 @@
           <button type="button" role="tab" id="tab-btn-nfr" aria-controls="tab-nfr" aria-selected="false" data-tab="nfr" tabindex="-1">NFR Gateway Exposure</button>
           <button type="button" role="tab" id="tab-btn-rework" aria-controls="tab-rework" aria-selected="false" data-tab="rework" tabindex="-1">Rework Risk &amp; Remediation</button>
           <button type="button" role="tab" id="tab-btn-recovery" aria-controls="tab-recovery" aria-selected="false" data-tab="recovery" tabindex="-1">Recovery Plan</button>
+          <button type="button" role="tab" id="tab-btn-drift" aria-controls="tab-drift" aria-selected="false" data-tab="drift" tabindex="-1">Baseline Drift</button>
         </div>
 
         <div class="tab-panels">
@@ -169,6 +170,27 @@
             <section class="panel print-section-recovery">
               <h2>Executive Summary &amp; Recovery Plan</h2>
               <div id="recovery-plan" class="recovery-plan"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel" id="tab-drift" role="tabpanel" aria-labelledby="tab-btn-drift" hidden>
+            <section class="panel no-print">
+              <h2>Baseline Drift</h2>
+              <p class="section-note">On-demand comparison, not a live sync — paste or upload a "Gatekeeper Baseline" export from earlier, then a later "current" export of the same feature, to see what changed. The currently loaded assessment above is used as Current automatically once you load a Baseline.</p>
+
+              <div class="ingest-row">
+                <div class="field field-wide">
+                  <label for="drift-baseline-input">Baseline export (paste or upload)</label>
+                  <textarea id="drift-baseline-input" rows="5" placeholder="Paste a dor-gatekeeper Baseline export here…"></textarea>
+                </div>
+              </div>
+              <div class="ingest-row">
+                <input type="file" id="drift-baseline-file" accept="application/json,.json" />
+                <button id="drift-compare-btn" type="button">Compare to Current</button>
+              </div>
+
+              <div id="drift-errors" class="errors-region" role="alert" style="padding: 0; margin: 1rem 0 0;"></div>
+              <div id="drift-result"></div>
             </section>
           </div>
         </div>
