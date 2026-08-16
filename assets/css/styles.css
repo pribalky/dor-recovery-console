@@ -211,11 +211,11 @@ button.secondary {
 
 /* ---------- shell: tabbed main + persistent aside ---------- */
 .app-shell {
-  max-width: 1280px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 1.5rem 2rem 2rem;
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 300px;
   gap: 1.5rem;
   align-items: start;
 }
@@ -226,16 +226,16 @@ button.secondary {
 
 .tab-nav {
   display: flex;
-  gap: 0.25rem;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.1rem;
   border-bottom: 1px solid var(--color-border);
-  overflow-x: auto;
 }
 
 .tab-nav button {
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 600;
-  padding: 0.65rem 1rem;
+  padding: 0.65rem 0.85rem;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
