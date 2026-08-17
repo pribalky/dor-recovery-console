@@ -72,7 +72,9 @@ dor-recovery-console/
 │   │   ├── sort.js                   # 3 sort lenses over the same gap list
 │   │   ├── nfrGateway.js             # rolls exposure up by NFR Gateway
 │   │   ├── reworkRisk.js             # computes the rework-risk score and tier
-│   │   └── driftCompare.js           # matches two gap lists by gap_id: new / resolved / severity-changed
+│   │   ├── driftCompare.js           # matches two gap lists by gap_id: new / resolved / severity-changed
+│   │   ├── deepLink.js               # parses ?sample=&health-card=1#tab= from the portal
+│   │   └── thresholdSignals.js       # writer half of the cross-app closed-loop signal (localStorage)
 │   ├── export/
 │   │   ├── markdownExport.js         # executive summary + auto-generated recovery plan
 │   │   ├── executiveHealthCard.js    # Strategy-to-Execution Health Card export
@@ -90,6 +92,8 @@ dor-recovery-console/
 │   ├── reworkRisk.test.js            # score/tier boundaries + hand-verified sample scores
 │   ├── adrExport.test.js             # ADR draft section content
 │   ├── driftCompare.test.js          # new/resolved/severity-changed classification, hand-built pairs
+│   ├── deepLink.test.js              # URL parameter parsing
+│   ├── thresholdSignals.test.js      # representative-gap selection, capped signal recording
 │   └── run.js                        # runs every *.test.js, exits non-zero on failure
 ├── DECISIONS.md                      # why things are built this way (shared with App 1)
 └── README.md                         # you are here
@@ -138,12 +142,12 @@ dor-recovery-console/
 
 **Cross-cutting views**
 - **NFR Gateway Exposure** — the same gaps regrouped by 4 PRD-defined gateways (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar. `Lineage`/`Probity` gaps are intentionally excluded from all 4 and flagged via an explicit count, not silently dropped.
-- **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways (Contain / Notify & Remediate / Block & Escalate) — reference only, never auto-selected.
+- **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways — **Hard Reversion / Emergency Gate Review / Tech Debt Isolation** (`DECISIONS.md` #32) — reference only, never auto-selected. A Medium/High-tier load also writes a small diagnostic signal to same-origin `localStorage`, read by `dor-gatekeeper` as an advisory suggestion — see [Closed-loop tuning](#closed-loop-tuning-cross-app) below.
 - **Baseline Drift** — the State Sync Bridge's receiving half: paste/upload a `dor-gatekeeper` "Baseline" export from earlier alongside the currently-loaded "current" assessment, and see what changed — New Since Baseline / Resolved Since Baseline / Severity Changed, matched by `gap_id`. On-demand, one-shot comparison, not a live sync (`DECISIONS.md` #30).
 
 **Executive exports**
 - **Markdown recovery brief** — total exposure, top exposure gaps, RAID rollups, auto-generated recovery plan.
-- **Executive Strategy-to-Execution Health Card** — TOM Feasibility Score, Top 3 Root Causes of Operational Rework, and mapped governance interventions. Renders an on-screen preview with its own **Print Health Card** button, so "Save as PDF" captures the Health Card, not the Recovery Plan panel.
+- **Executive Strategy-to-Execution Health Card** — TOM Feasibility Score, Total Financial Exposure reframed as **Protected Capital** (`DECISIONS.md` #32), Top 3 Root Causes of Operational Rework, and mapped governance interventions. Renders an on-screen preview with its own **Print Health Card** button, so "Save as PDF" captures the Health Card, not the Recovery Plan panel.
 - **ADR draft** — a standard Status/Context/Decision/Consequences record, auto-populated from the top exposure gaps and the same recovery-plan steps.
 - **Print / Save as PDF** — native browser print, no PDF library.
 
@@ -222,6 +226,10 @@ Expects the JSON shape App 1 exports:
 Cost bands in `js/config/costModel.js` are illustrative placeholders, not real actuarial or contractual figures — see `DECISIONS.md` #11, #20.
 
 ---
+
+## Closed-loop tuning (cross-app)
+
+`dor-gatekeeper` and `dor-recovery-console` are both served under the same GitHub Pages host (`pribalky.github.io/dor-gatekeeper/` and `pribalky.github.io/dor-recovery-console/`) — browser origin is protocol+host+port only, not path, so both pages share one origin and one `localStorage`. This app writes a small diagnostic signal (`js/engine/thresholdSignals.js`, key `dor:reworkSignals`, capped at 20) once per loaded assessment whose Rework Risk tier is Medium or High; `dor-gatekeeper` reads the same key and surfaces an advisory "this pillar keeps driving rework" suggestion — never an auto-applied threshold change. Single-browser/single-device only; not a live sync across people. See `DECISIONS.md` #33.
 
 ## Related docs
 

@@ -10,6 +10,7 @@ import { rollupByGateway } from "./engine/nfrGateway.js";
 import { computeReworkRiskScore, classifyReworkTier, escalationTextForTier } from "./engine/reworkRisk.js";
 import { compareGapSets } from "./engine/driftCompare.js";
 import { parseDeepLinkParams } from "./engine/deepLink.js";
+import { selectRepresentativeGap, recordSignal } from "./engine/thresholdSignals.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -95,6 +96,46 @@ function populateSampleSelect() {
     SAMPLE_EXPORTS.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
 }
 
+// Shared, namespaced localStorage key — deliberately readable by dor-gatekeeper too,
+// since both apps are served under the same GitHub Pages host (pribalky.github.io),
+// making them same-origin regardless of path (DECISIONS.md). Advisory-only diagnostic
+// signal, never load-bearing: every access is wrapped in try/catch and silently no-ops
+// if storage is unavailable (private browsing, disabled storage, quota).
+const REWORK_SIGNALS_KEY = "dor:reworkSignals";
+
+// handleLoad() can run twice for one logical "load this assessment" action (the
+// sample <select>'s own change handler already loads it; clicking "Validate & Load"
+// loads the now-populated paste-input again) — this guard keeps that a single signal
+// per assessment_id rather than recording the same diagnostic twice.
+let lastSignaledAssessmentId = null;
+
+function recordReworkSignalIfNeeded(assessment) {
+  if (assessment.assessment_id === lastSignaledAssessmentId) return;
+  lastSignaledAssessmentId = assessment.assessment_id;
+
+  const gaps = flattenGaps(assessment);
+  const tier = classifyReworkTier(computeReworkRiskScore(gaps));
+  if (tier !== "Medium" && tier !== "High") return;
+
+  const repGap = selectRepresentativeGap(gaps);
+  if (!repGap) return;
+
+  const signal = {
+    pillar_name: repGap.pillar_name,
+    category_tag: repGap.category_tag,
+    severity_gov: repGap.severity_gov,
+    tier,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    const existing = JSON.parse(localStorage.getItem(REWORK_SIGNALS_KEY) || "[]");
+    localStorage.setItem(REWORK_SIGNALS_KEY, JSON.stringify(recordSignal(existing, signal)));
+  } catch {
+    // Advisory diagnostic only — never let a storage failure interrupt ingestion.
+  }
+}
+
 function handleLoad(text) {
   const { assessment, errors } = ingestAssessment(text);
   showErrors(els.ingestErrors, errors);
@@ -112,6 +153,7 @@ function handleLoad(text) {
   els.assumpScale.value = state.assumptions.costScale;
   els.consoleSection.hidden = false;
   recompute();
+  recordReworkSignalIfNeeded(assessment);
 }
 
 function recompute() {

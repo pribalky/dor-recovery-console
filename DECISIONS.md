@@ -315,3 +315,25 @@ Every existing element `id` was preserved — `app.js`'s lookups needed zero cha
 **Why:** This is intentionally the smallest possible mechanism — reading 3 URL parameters and calling 3 functions that already existed — not a client-side router or a new state-management layer. The portal is a set of plain links; each one just needs to land a visitor somewhere specific and already-populated.
 
 **Trade-off:** No back/forward-aware state (changing tabs after landing doesn't update the URL) and no deep-link support for RAID edits, manual costs, or anything entered after landing — this is a one-shot "arrive here" mechanism, not persisted navigation state.
+
+---
+
+## 32. Remediation pathway labels adopted, Health Card gains a "Protected Capital" reframing — content only, no logic changed
+
+**Decision:** `REMEDIATION_PATHWAYS`' option labels changed to match the originating PRD's terminology exactly — "Contain" → "Hard Reversion", "Notify & Remediate" → "Emergency Gate Review", "Block & Escalate" → "Tech Debt Isolation" — while every trigger/mechanism/impact description stays as authored (already accurate; only the label needed to change). `buildHealthCardData()` gains a `protectedCapitalNote` field: the exact same `totalLow`/`totalHigh` figure already shown as "Total Financial Exposure", reframed as capital protected by catching the gap pre-commitment. Consumed identically by both the Markdown export and the on-screen preview (`renderHealthCardPreview`), so the two can't drift — same discipline as `DECISIONS.md` #21.
+
+**Why:** Pure narrative alignment — the underlying computation was already correct (`DECISIONS.md` #27's severity-point formula, the exposure figures from `financialTranslator.js`), so the fix is relabeling and reframing, not new logic. `protectedCapitalNote` is a derived string, not a new number.
+
+**Trade-off:** None — no data changed, no computation added.
+
+---
+
+## 33. Rework-risk diagnostic signals: real cross-app closed-loop tuning via same-origin `localStorage`, advisory only
+
+**Decision:** This app now writes a small diagnostic signal to `localStorage` (key `dor:reworkSignals`, capped at the most recent 20, `js/engine/thresholdSignals.js`) once per loaded assessment whose Rework Risk tier is Medium or High — `selectRepresentativeGap()` picks the single highest-severity gap to represent that assessment (High > Med > Low), so the pattern reflects genuine recurrence across assessments, not a single assessment's own gap count. A module-level `lastSignaledAssessmentId` guard in `app.js` prevents a duplicate signal when `handleLoad()` runs twice for one logical load (the sample `<select>`'s own change handler already loads it; clicking "Validate & Load" loads the now-populated paste box again — pre-existing behavior, only visible once something as stateful as a signal write depended on call count). `dor-gatekeeper` reads this same key to surface advisory suggestions — see that repo's `DECISIONS.md` #36.
+
+This works because `dor-gatekeeper` and `dor-recovery-console` are both served under the same GitHub Pages host — `pribalky.github.io/dor-gatekeeper/` and `pribalky.github.io/dor-recovery-console/` — and browser origin is protocol+host+port only, **not path**. Both pages share one origin, so `localStorage` written here is directly readable there, in the same browser, with zero backend.
+
+**Why:** This is the first genuinely new capability in this plan, not a relabeling — worth flagging as its own decision. It's also the first time either app has persisted *anything*. Kept strictly advisory: this app only ever writes a diagnostic signal; it never reads back or mutates its own scoring, and `dor-gatekeeper`'s reader (next entry) only ever *suggests*, never auto-mutates `FRAMEWORKS`/weights — same "reference, not auto-selected" discipline as `REMEDIATION_PATHWAYS`. Every `localStorage` access is wrapped in try/catch and silently no-ops on failure (private browsing, disabled storage, quota) — an advisory diagnostic must never be able to interrupt ingestion.
+
+**Trade-off:** Single-browser, single-device only — `localStorage` never syncs across machines or people. This is *not* the originating PRD's implied org-wide closed loop; it's a real, working loop scoped honestly to one person working across both tools in one browser. Not a walk-back of the "no persistent database" position (`DECISIONS.md` #8/#10) — a deliberate, narrow, documented exception, not a quiet architectural drift.

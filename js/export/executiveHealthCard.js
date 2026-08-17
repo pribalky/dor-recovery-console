@@ -13,6 +13,13 @@ export function buildHealthCardData(assessment, exposure, raidEntries) {
   const recoverySteps = rootCauses.length > 0 ? buildRecoveryPlan(assessment, exposure) : [];
   const escalationItems = raidEntries.filter((e) => e.status !== "Closed" && e.escalation_level !== "Team");
 
+  // Same totalLow/totalHigh figure as "Total Financial Exposure" — reframed as capital
+  // protected by catching these gaps pre-commitment, not a second computation.
+  const protectedCapitalNote =
+    rootCauses.length > 0
+      ? `Catching these gaps before commitment protects $${exposure.totalLow.toLocaleString()}–$${exposure.totalHigh.toLocaleString()} of capital from being spent on rework.`
+      : null;
+
   return {
     featureName: assessment.feature_name,
     overallScore: assessment.overall_score,
@@ -21,6 +28,7 @@ export function buildHealthCardData(assessment, exposure, raidEntries) {
     totalHigh: exposure.totalHigh,
     pendingManualCostCount: exposure.pendingManualCostCount,
     utilisationImpactPct: exposure.utilisationImpactPct,
+    protectedCapitalNote,
     rootCauses,
     interventions,
     recoverySteps,
@@ -39,6 +47,9 @@ export function buildExecutiveHealthCard(assessment, exposure, raidEntries) {
   lines.push("");
   lines.push(`- **TOM Feasibility Score:** ${data.overallScore}% (${data.gateDecision})`);
   lines.push(`- **Total Financial Exposure:** $${data.totalLow.toLocaleString()} – $${data.totalHigh.toLocaleString()}`);
+  if (data.protectedCapitalNote) {
+    lines.push(`- **Protected Capital:** ${data.protectedCapitalNote}`);
+  }
   if (data.pendingManualCostCount > 0) {
     lines.push(`- **Pending Manual Costing:** ${data.pendingManualCostCount} item(s) not yet included above.`);
   }

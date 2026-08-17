@@ -268,6 +268,7 @@ export function renderHealthCardPreview(container, data) {
       <span class="gate-badge gate-${data.gateDecision.toLowerCase()}">${data.gateDecision}</span>
       <span>Total Financial Exposure: $${data.totalLow.toLocaleString()} – $${data.totalHigh.toLocaleString()}</span>
     </div>
+    ${data.protectedCapitalNote ? `<p class="utilisation-summary">${data.protectedCapitalNote}</p>` : ""}
     ${data.pendingManualCostCount > 0 ? `<p class="pending-flag">${data.pendingManualCostCount} item(s) pending manual costing — not yet included above.</p>` : ""}
     ${data.utilisationImpactPct > 0 ? `<p class="utilisation-summary">Estimated utilisation impact: <strong>${data.utilisationImpactPct}%</strong> of a sprint's capacity.</p>` : ""}
 
