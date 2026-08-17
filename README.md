@@ -74,7 +74,9 @@ dor-recovery-console/
 │   │   ├── reworkRisk.js             # computes the rework-risk score and tier
 │   │   ├── driftCompare.js           # matches two gap lists by gap_id: new / resolved / severity-changed
 │   │   ├── deepLink.js               # parses ?sample=&health-card=1#tab= from the portal
-│   │   └── thresholdSignals.js       # writer half of the cross-app closed-loop signal (localStorage)
+│   │   ├── thresholdSignals.js       # writer half of the cross-app closed-loop signal (localStorage)
+│   │   ├── featureHistory.js         # capped per-feature rework-risk history (localStorage)
+│   │   └── escalationTrend.js        # derives an in-flight "worsening" flag from that history
 │   ├── export/
 │   │   ├── markdownExport.js         # executive summary + auto-generated recovery plan
 │   │   ├── executiveHealthCard.js    # Strategy-to-Execution Health Card export
@@ -94,6 +96,8 @@ dor-recovery-console/
 │   ├── driftCompare.test.js          # new/resolved/severity-changed classification, hand-built pairs
 │   ├── deepLink.test.js              # URL parameter parsing
 │   ├── thresholdSignals.test.js      # representative-gap selection, capped signal recording
+│   ├── featureHistory.test.js        # capped history append + order
+│   ├── escalationTrend.test.js       # worsening/improving/flat + current-assessment exclusion
 │   └── run.js                        # runs every *.test.js, exits non-zero on failure
 ├── DECISIONS.md                      # why things are built this way (shared with App 1)
 └── README.md                         # you are here
@@ -142,7 +146,7 @@ dor-recovery-console/
 
 **Cross-cutting views**
 - **NFR Gateway Exposure** — the same gaps regrouped by 4 PRD-defined gateways (Resilience & Failure Mode / Cost & Resource Limit / Security & OWASP / Performance & Scale) instead of by pillar. `Lineage`/`Probity` gaps are intentionally excluded from all 4 and flagged via an explicit count, not silently dropped.
-- **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways — **Hard Reversion / Emergency Gate Review / Tech Debt Isolation** (`DECISIONS.md` #32) — reference only, never auto-selected. A Medium/High-tier load also writes a small diagnostic signal to same-origin `localStorage`, read by `dor-gatekeeper` as an advisory suggestion — see [Closed-loop tuning](#closed-loop-tuning-cross-app) below.
+- **Rework Risk & Remediation** — a severity-weighted score (High 10 / Med 5 / Low 2 points per open gap) classified into Low/Medium/High tiers with escalation guidance, plus a reference table of 3 remediation pathways — **Hard Reversion / Emergency Gate Review / Tech Debt Isolation** (`DECISIONS.md` #32) — reference only, never auto-selected. A Medium/High-tier load also writes a small diagnostic signal to same-origin `localStorage`, read by `dor-gatekeeper` as an advisory suggestion — see [Closed-loop tuning](#closed-loop-tuning-cross-app) below. Every load (any tier) also records this feature's score/tier to a same-browser history; if a later load of the *same* feature scores worse, a **"⚠ Escalating"** tag appears on this panel naming the prior score and when it was last loaded — an in-flight, same-browser-history trend flag, not a trained prediction (`DECISIONS.md` #35).
 - **Baseline Drift** — the State Sync Bridge's receiving half: paste/upload a `dor-gatekeeper` "Baseline" export from earlier alongside the currently-loaded "current" assessment, and see what changed — New Since Baseline / Resolved Since Baseline / Severity Changed, matched by `gap_id`. On-demand, one-shot comparison, not a live sync (`DECISIONS.md` #30).
 
 **Executive exports**

@@ -620,6 +620,16 @@ thead th {
   margin: 0 0 1rem;
 }
 
+.escalation-trend-tag {
+  color: var(--color-blocked);
+  border: 1px solid var(--color-blocked);
+  border-left-width: 3px;
+  padding: 0.5rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0 0 1rem;
+}
+
 .app-footer {
   max-width: 1280px;
   margin: 0 auto;

@@ -215,7 +215,7 @@ export function renderNfrGatewayPanel(container, rollup) {
   `;
 }
 
-export function renderReworkRiskPanel(container, { score, tier, escalationText }) {
+export function renderReworkRiskPanel(container, { score, tier, escalationText, escalation }) {
   const pathwaysRows = REMEDIATION_PATHWAYS.map(
     (p) => `
     <tr>
@@ -226,12 +226,17 @@ export function renderReworkRiskPanel(container, { score, tier, escalationText }
     </tr>`
   ).join("");
 
+  const escalationTag = escalation?.escalating
+    ? `<p class="escalation-trend-tag">⚠ Escalating — Rework Risk score rose from ${escalation.priorScore} to ${score} since this feature was last loaded (${new Date(escalation.priorTimestamp).toLocaleDateString()}).</p>`
+    : "";
+
   container.innerHTML = `
     <div class="rework-risk-summary rework-tier-${tier.toLowerCase()}">
       <span class="rework-score">${score}</span>
       <span class="rework-tier">${tier} risk</span>
     </div>
     <p class="rework-escalation">${escalationText}</p>
+    ${escalationTag}
     <h3>Remediation Pathway Reference</h3>
     <p class="section-note">Reference only — not auto-selected. Which option applies depends on the reason for drift, which requires a human judgement call.</p>
     <div class="table-scroll">

@@ -11,6 +11,8 @@ import { computeReworkRiskScore, classifyReworkTier, escalationTextForTier } fro
 import { compareGapSets } from "./engine/driftCompare.js";
 import { parseDeepLinkParams } from "./engine/deepLink.js";
 import { selectRepresentativeGap, recordSignal } from "./engine/thresholdSignals.js";
+import { recordFeatureHistory } from "./engine/featureHistory.js";
+import { deriveEscalationTrend } from "./engine/escalationTrend.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -102,21 +104,53 @@ function populateSampleSelect() {
 // signal, never load-bearing: every access is wrapped in try/catch and silently no-ops
 // if storage is unavailable (private browsing, disabled storage, quota).
 const REWORK_SIGNALS_KEY = "dor:reworkSignals";
+const FEATURE_HISTORY_KEY = "dor:featureHistory";
+
+function featureNameKeyFor(assessment) {
+  return (assessment.feature_name || "").trim().toLowerCase();
+}
 
 // handleLoad() can run twice for one logical "load this assessment" action (the
 // sample <select>'s own change handler already loads it; clicking "Validate & Load"
-// loads the now-populated paste-input again) — this guard keeps that a single signal
-// per assessment_id rather than recording the same diagnostic twice.
+// loads the now-populated paste-input again) — this guard keeps that a single write
+// per assessment_id rather than recording the same diagnostics twice.
 let lastSignaledAssessmentId = null;
 
-function recordReworkSignalIfNeeded(assessment) {
+// Feature-history is written unconditionally (every load, any tier) — most of a
+// feature's real history sits at Low, and gating this the same way the rework
+// signal is gated would starve deriveEscalationTrend of the data it needs. The
+// rework signal itself stays tier-gated, same behavior as before this split.
+function recordAssessmentSignalsIfNeeded(assessment) {
   if (assessment.assessment_id === lastSignaledAssessmentId) return;
   lastSignaledAssessmentId = assessment.assessment_id;
 
   const gaps = flattenGaps(assessment);
-  const tier = classifyReworkTier(computeReworkRiskScore(gaps));
-  if (tier !== "Medium" && tier !== "High") return;
+  const score = computeReworkRiskScore(gaps);
+  const tier = classifyReworkTier(score);
 
+  recordFeatureHistoryEntry(assessment, score, tier);
+  if (tier === "Medium" || tier === "High") recordReworkSignal(assessment, gaps, tier);
+}
+
+function recordFeatureHistoryEntry(assessment, reworkScore, reworkTier) {
+  const entry = {
+    feature_name_key: featureNameKeyFor(assessment),
+    assessment_id: assessment.assessment_id,
+    timestamp: new Date().toISOString(),
+    overall_score: assessment.overall_score,
+    gate_decision: assessment.gate_decision,
+    reworkScore,
+    reworkTier,
+  };
+  try {
+    const existing = JSON.parse(localStorage.getItem(FEATURE_HISTORY_KEY) || "[]");
+    localStorage.setItem(FEATURE_HISTORY_KEY, JSON.stringify(recordFeatureHistory(existing, entry)));
+  } catch {
+    // Advisory diagnostic only — never let a storage failure interrupt ingestion.
+  }
+}
+
+function recordReworkSignal(assessment, gaps, tier) {
   const repGap = selectRepresentativeGap(gaps);
   if (!repGap) return;
 
@@ -136,6 +170,22 @@ function recordReworkSignalIfNeeded(assessment) {
   }
 }
 
+// Read side of dor:featureHistory — live on every recompute(), not just once per
+// load, since the badge must reflect the current feature even after an in-session
+// RAID/assumption edit. Excludes the current assessment_id: by the second
+// recompute() within one load, that entry is already in storage (write happens
+// once, right after the first recompute()), and without the exclusion the trend
+// would compare the score to itself.
+function readEscalationTrendSafe(assessment, reworkScore, reworkTier) {
+  let history = [];
+  try {
+    history = JSON.parse(localStorage.getItem(FEATURE_HISTORY_KEY) || "[]");
+  } catch {
+    return { escalating: false };
+  }
+  return deriveEscalationTrend(history, featureNameKeyFor(assessment), assessment.assessment_id, reworkScore, reworkTier);
+}
+
 function handleLoad(text) {
   const { assessment, errors } = ingestAssessment(text);
   showErrors(els.ingestErrors, errors);
@@ -153,7 +203,7 @@ function handleLoad(text) {
   els.assumpScale.value = state.assumptions.costScale;
   els.consoleSection.hidden = false;
   recompute();
-  recordReworkSignalIfNeeded(assessment);
+  recordAssessmentSignalsIfNeeded(assessment);
 }
 
 function recompute() {
@@ -183,7 +233,8 @@ function recompute() {
 
   const reworkScore = computeReworkRiskScore(gaps);
   const reworkTier = classifyReworkTier(reworkScore);
-  renderReworkRiskPanel(els.reworkRiskPanel, { score: reworkScore, tier: reworkTier, escalationText: escalationTextForTier(reworkTier) });
+  const escalation = readEscalationTrendSafe(state.assessment, reworkScore, reworkTier);
+  renderReworkRiskPanel(els.reworkRiskPanel, { score: reworkScore, tier: reworkTier, escalationText: escalationTextForTier(reworkTier), escalation });
 
   // Keep an already-open Health Card preview live too, so an edit (e.g. RAID status)
   // made after generating it doesn't leave a stale preview on screen.
