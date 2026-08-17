@@ -37,3 +37,17 @@ const veryBadGaps = flattenGaps(VALID_SAMPLE_ASSESSMENTS.very_bad);
 const veryBadExpected = 8 * SEVERITY_POINTS.High + 12 * SEVERITY_POINTS.Med + 5 * SEVERITY_POINTS.Low;
 assertEqual(computeReworkRiskScore(veryBadGaps), veryBadExpected, "the very_bad sample's score matches a hand calculation across all 25 gaps");
 assertEqual(classifyReworkTier(veryBadExpected), "High", "the very_bad sample classifies as High tier");
+
+// Escalation Demo pair: same feature_name, deliberately worse the second time —
+// the "before" sample scores Low, the "after" sample scores High, so loading them in
+// order in the app produces a real, reproducible escalation-trend demonstration.
+const escBeforeGaps = flattenGaps(VALID_SAMPLE_ASSESSMENTS.escalation_demo_before);
+const escBeforeExpected = 1 * SEVERITY_POINTS.Med + 1 * SEVERITY_POINTS.Low;
+assertEqual(computeReworkRiskScore(escBeforeGaps), escBeforeExpected, "the escalation_demo_before sample's score matches a hand calculation from its 1 Med + 1 Low gap");
+assertEqual(classifyReworkTier(escBeforeExpected), "Low", "the escalation_demo_before sample classifies as Low tier");
+
+const escAfterGaps = flattenGaps(VALID_SAMPLE_ASSESSMENTS.escalation_demo_after);
+const escAfterExpected = 3 * SEVERITY_POINTS.High + 1 * SEVERITY_POINTS.Med;
+assertEqual(computeReworkRiskScore(escAfterGaps), escAfterExpected, "the escalation_demo_after sample's score matches a hand calculation from its 3 High + 1 Med gap");
+assertEqual(classifyReworkTier(escAfterExpected), "High", "the escalation_demo_after sample classifies as High tier");
+assertTrue(escAfterExpected > escBeforeExpected, "the after sample's score is strictly worse than the before sample's, so the demo actually demonstrates escalation");

@@ -371,3 +371,13 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 **Why:** Per this app's stated accessibility requirement, and matching the exact same audit run against `dor-gatekeeper` (see that repo's `DECISIONS.md` #40) — the color token is shared between both apps, so the fix applies identically. Treated as a one-time, human-reviewed audit rather than a standing CI dependency, same rationale as that entry.
 
 **Trade-off:** None — the color shift is imperceptible and the landmark restructuring is additive/renaming only, verified via headless browser that every existing feature (RAID table, Rework Risk panel, Executive Health Card) still renders and functions identically. A clean automated pass is not a full manual WCAG audit; flagged honestly as the scope actually covered.
+
+---
+
+## 37. Escalation Demo sample pair — a genuine, reproducible demo, not fabricated history
+
+**Decision:** Two new bundled samples, `escalation_demo_before` / `escalation_demo_after`, sharing one `feature_name` ("Sample: Escalation Demo — Payment Retry Logic") with deliberately worse gaps the second time — before scores 7 points (Low tier), after scores 35 (High tier), hand-verified in `tests/reworkRisk.test.js`. Loading "before" then "after" from the existing sample dropdown produces a real "⚠ Escalating" tag on the Rework Risk panel via the actual `dor:featureHistory` mechanism (#35) — nothing is special-cased or seeded directly into `localStorage`; the demo pair just gives that mechanism real data to work with, the same as any two loads of the same feature would.
+
+**Why:** Requested directly — the escalation-trend feature needs two loads of the same feature to show anything, so without a matching sample pair a first-time visitor has no way to see it work without constructing their own before/after JSON by hand. The alternative — pre-seeding a synthetic prior entry into `dor:featureHistory` so a single load shows the tag immediately — was rejected: it would mean this app writes fabricated diagnostic data into its own real signal store, the first time either app in this session would have done that, breaking the "genuine, not narrative" discipline every prior `localStorage` decision here has held to (#33, #35).
+
+**Trade-off:** Requires two dropdown selections (load "before", then "after") to see the feature demonstrated, rather than one — an honest cost of not fabricating data to save a click.

@@ -1,9 +1,13 @@
-// Bundled sample App 1 exports for the "load a sample export" dropdown. The 4 valid
-// ones mirror dor-gatekeeper's own Best/Good/Intentionally Off/Very Bad samples (same
-// 25-item checklist, same answers) so the financial/RAID/exec-summary modules exercise
-// realistic, varied input. 2 are deliberately invalid, to exercise the explicit
-// ingestion-rejection paths required by the PRD. Every fixture here is also asserted
-// against directly in tests/ingestion.test.js — the dropdown is provably correct.
+// Bundled sample App 1 exports for the "load a sample export" dropdown. best/good/
+// intentionally_off/very_bad mirror dor-gatekeeper's own baseline samples (same 25-item
+// checklist, same answers); water_good/energy_good/public_sector_good mirror its sector
+// presets — together they exercise realistic, varied input across the financial/RAID/
+// exec-summary modules. escalation_demo_before/after are a matched pair (same
+// feature_name, deliberately worse the second time) that demonstrate the escalation-
+// trend feature end to end when loaded in order. malformed/schema_invalid are
+// deliberately invalid, to exercise the explicit ingestion-rejection paths required by
+// the PRD. Every fixture here is also asserted against directly in
+// tests/ingestion.test.js — the dropdown is provably correct.
 
 const bestExport = {
   schema_version: "1.0",
@@ -254,6 +258,59 @@ const publicSectorGoodExport = {
   ],
 };
 
+// Escalation Demo pair — same feature_name, two different assessment_ids, deliberately
+// worse the second time. Loading "before" then "after" from the dropdown is a genuine,
+// reproducible demo of the escalation-trend feature (js/engine/escalationTrend.js):
+// real featureHistory gets written on each load exactly as it would for any other
+// feature, nothing here is special-cased or fabricated directly into localStorage.
+const escalationDemoBeforeExport = {
+  schema_version: "1.0",
+  assessment_id: "sample-escalation-demo-before-0000",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Sample: Escalation Demo — Payment Retry Logic",
+  overall_score: 90,
+  gate_decision: "APPROVED",
+  pillars: [
+    { pillar_name: "Architectural & Data Lineage Feasibility", pillar_score: 100, gaps: [] },
+    { pillar_name: "Responsible AI & Safety Assurance", pillar_score: 100, gaps: [] },
+    { pillar_name: "Data Governance & Regulatory Compliance", pillar_score: 100, gaps: [] },
+    {
+      pillar_name: "Operational Readiness & Resilience",
+      pillar_score: 80,
+      gaps: [
+        { gap_id: "GAP-ESC-1", description: "Retry backoff strategy defined for payment gateway timeouts", severity_gov: "Med", category_tag: "Fallback" },
+        { gap_id: "GAP-ESC-2", description: "Monitoring/alerting threshold for retry storm defined", severity_gov: "Low", category_tag: "RateLimit" },
+      ],
+    },
+    { pillar_name: "Definition of Ready Completeness", pillar_score: 100, gaps: [] },
+  ],
+};
+
+const escalationDemoAfterExport = {
+  schema_version: "1.0",
+  assessment_id: "sample-escalation-demo-after-0000",
+  assessment_date: "2026-01-15T00:00:00.000Z",
+  feature_name: "Sample: Escalation Demo — Payment Retry Logic",
+  overall_score: 58,
+  gate_decision: "CONDITIONAL",
+  pillars: [
+    { pillar_name: "Architectural & Data Lineage Feasibility", pillar_score: 100, gaps: [] },
+    { pillar_name: "Responsible AI & Safety Assurance", pillar_score: 100, gaps: [] },
+    { pillar_name: "Data Governance & Regulatory Compliance", pillar_score: 100, gaps: [] },
+    {
+      pillar_name: "Operational Readiness & Resilience",
+      pillar_score: 30,
+      gaps: [
+        { gap_id: "GAP-ESC-1", description: "Retry backoff strategy still undefined for payment gateway timeouts — escalated since last sprint", severity_gov: "High", category_tag: "Fallback" },
+        { gap_id: "GAP-ESC-3", description: "Circuit-breaker behaviour undefined for downstream payment processor outage", severity_gov: "High", category_tag: "Fallback" },
+        { gap_id: "GAP-ESC-2", description: "Rate limiting / token budgeting not configured for retry storm", severity_gov: "Med", category_tag: "RateLimit" },
+        { gap_id: "GAP-ESC-4", description: "SLA breach risk unaddressed for extended processor outage", severity_gov: "High", category_tag: "Fallback" },
+      ],
+    },
+    { pillar_name: "Definition of Ready Completeness", pillar_score: 100, gaps: [] },
+  ],
+};
+
 // Deliberately invalid: not parseable JSON (missing comma after assessment_id).
 const malformedRaw = `{
   "schema_version": "1.0",
@@ -290,6 +347,8 @@ export const VALID_SAMPLE_ASSESSMENTS = {
   water_good: waterGoodExport,
   energy_good: energyGoodExport,
   public_sector_good: publicSectorGoodExport,
+  escalation_demo_before: escalationDemoBeforeExport,
+  escalation_demo_after: escalationDemoAfterExport,
 };
 
 export const SAMPLE_EXPORTS = [
@@ -300,6 +359,8 @@ export const SAMPLE_EXPORTS = [
   { id: "water_good", label: "Water Asset Transformation — Good (valid, schema 1.1)", raw: JSON.stringify(waterGoodExport, null, 2) },
   { id: "energy_good", label: "Energy Grid Operating Model — Good (valid, schema 1.1)", raw: JSON.stringify(energyGoodExport, null, 2) },
   { id: "public_sector_good", label: "Public Sector — Good (valid, schema 1.2)", raw: JSON.stringify(publicSectorGoodExport, null, 2) },
+  { id: "escalation_demo_before", label: "Escalation Demo — Sprint 3 baseline (valid, load 1st)", raw: JSON.stringify(escalationDemoBeforeExport, null, 2) },
+  { id: "escalation_demo_after", label: "Escalation Demo — Sprint 5 worsened (valid, load 2nd to see the trend)", raw: JSON.stringify(escalationDemoAfterExport, null, 2) },
   { id: "malformed", label: "Malformed JSON (invalid — tests parse error)", raw: malformedRaw },
   { id: "schema_invalid", label: "Schema-Invalid Export (invalid — tests validation errors)", raw: JSON.stringify(schemaInvalidExport, null, 2) },
 ];

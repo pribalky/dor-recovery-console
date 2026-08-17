@@ -2,7 +2,17 @@ import { assertEqual, assertTrue } from "./assert.js";
 import { ingestAssessment } from "../js/ingestion/validate.js";
 import { SAMPLE_EXPORTS } from "../js/config/sampleExports.js";
 
-for (const id of ["best", "good", "intentionally_off", "very_bad", "water_good", "energy_good", "public_sector_good"]) {
+for (const id of [
+  "best",
+  "good",
+  "intentionally_off",
+  "very_bad",
+  "water_good",
+  "energy_good",
+  "public_sector_good",
+  "escalation_demo_before",
+  "escalation_demo_after",
+]) {
   const sample = SAMPLE_EXPORTS.find((s) => s.id === id);
   const { assessment, errors } = ingestAssessment(sample.raw);
   assertEqual(errors.length, 0, `valid sample "${id}" ingests with no errors`);
