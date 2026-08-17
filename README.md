@@ -183,6 +183,8 @@ node tests/run.js
 
 Zero-dependency custom runner (`tests/assert.js` + `tests/run.js`, an independent copy of App 1's — the two repos are deliberately decoupled). Every `*.test.js` in `tests/` is imported by `run.js`; add new ones there.
 
+`.github/workflows/test.yml` runs this same `node tests/run.js` on every push/PR to `main` — no `npm install` there either, just a Node runtime.
+
 ---
 
 ## Deploying to GitHub Pages
