@@ -6,6 +6,7 @@ import "./nfrGateway.test.js";
 import "./reworkRisk.test.js";
 import "./adrExport.test.js";
 import "./driftCompare.test.js";
+import "./deepLink.test.js";
 import { summary } from "./assert.js";
 
 const { passCount, failCount, failures } = summary();

@@ -9,6 +9,7 @@ import { buildAdrDraft, exportFilenameAdr } from "./export/adrExport.js";
 import { rollupByGateway } from "./engine/nfrGateway.js";
 import { computeReworkRiskScore, classifyReworkTier, escalationTextForTier } from "./engine/reworkRisk.js";
 import { compareGapSets } from "./engine/driftCompare.js";
+import { parseDeepLinkParams } from "./engine/deepLink.js";
 import { validateManualRaidEntry, validateManualCost } from "./ui/validation.js";
 import {
   showErrors,
@@ -224,6 +225,36 @@ function handleRaidFormSubmit(event) {
   recompute();
 }
 
+const VALID_TABS = new Set(["gaps", "raid", "nfr", "rework", "recovery", "drift"]);
+
+// Applies ?sample=<id>&health-card=1#tab=<id> from the URL — lets the persona portal
+// (dor-gatekeeper/portal.html) land a visitor directly on a populated, pre-selected
+// view instead of the blank ingest screen. Never auto-triggers a file download —
+// health-card=1 only renders the on-screen preview, same as clicking the button
+// minus the download side-effect.
+function applyDeepLink() {
+  const { sample: sampleId, healthCard, tab } = parseDeepLinkParams(location.search, location.hash);
+  if (!sampleId) return;
+
+  const sample = SAMPLE_EXPORTS.find((s) => s.id === sampleId);
+  if (!sample) return;
+
+  els.sampleSelect.value = sample.id;
+  els.pasteInput.value = sample.raw;
+  handleLoad(sample.raw);
+  if (!state.assessment) return;
+
+  if (tab && VALID_TABS.has(tab)) switchTab(tab);
+
+  if (healthCard) {
+    const exposure = recompute();
+    if (exposure) {
+      els.healthCardPreview.hidden = false;
+      renderHealthCard(exposure);
+    }
+  }
+}
+
 function handleDriftCompare() {
   const text = els.driftBaselineInput.value.trim();
   if (!text) {
@@ -371,6 +402,8 @@ function init() {
     showErrors(els.driftErrors, []);
     showErrors(els.ingestErrors, []);
   });
+
+  applyDeepLink();
 }
 
 document.addEventListener("DOMContentLoaded", init);
