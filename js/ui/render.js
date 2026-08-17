@@ -1,5 +1,6 @@
 import { RAID_TYPES, RAID_STATUSES, ESCALATION_LEVELS, rollupByTypeAndStatus, rollupByEscalationAndStatus } from "../engine/raid.js";
 import { REMEDIATION_PATHWAYS } from "../config/reworkRiskConfig.js";
+import { escapeHtml } from "./escapeHtml.js";
 
 function optionsHtml(values, selected) {
   return values.map((v) => `<option value="${v}"${v === selected ? " selected" : ""}>${v}</option>`).join("");
@@ -22,17 +23,17 @@ export function renderDriftResult(container, drift) {
     ${section(
       "New Since Baseline",
       newGaps,
-      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${g.description}</span></li>`
+      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${escapeHtml(g.description)}</span></li>`
     )}
     ${section(
       "Resolved Since Baseline",
       resolvedGaps,
-      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${g.description}</span></li>`
+      (g) => `<li class="gap-row severity-${g.severity_gov.toLowerCase()}"><span class="gap-severity">${g.severity_gov}</span><span>${escapeHtml(g.description)}</span></li>`
     )}
     ${section(
       "Severity Changed",
       severityChanged,
-      (c) => `<li class="gap-row"><span>${c.description}</span><span class="gap-meta">${c.from} → ${c.to}</span></li>`
+      (c) => `<li class="gap-row"><span>${escapeHtml(c.description)}</span><span class="gap-meta">${c.from} → ${c.to}</span></li>`
     )}
   `;
 }
@@ -45,9 +46,9 @@ export function showErrors(container, errors) {
 
 export function renderSummaryBar(container, assessment) {
   container.innerHTML = `
-    <h2>${assessment.feature_name}</h2>
+    <h2>${escapeHtml(assessment.feature_name)}</h2>
     <div class="summary-meta">
-      <span>Assessment ID: <code>${assessment.assessment_id}</code></span>
+      <span>Assessment ID: <code>${escapeHtml(assessment.assessment_id)}</code></span>
       <span>Overall Score: <strong>${assessment.overall_score}</strong>/100</span>
       <span class="gate-badge gate-${assessment.gate_decision.toLowerCase()}">${assessment.gate_decision}</span>
     </div>
@@ -88,7 +89,7 @@ export function renderGapTable(tbody, costedGaps, manualCosts, raidByGapId, hand
       return `
         <tr class="gap-row severity-${gap.severity_gov.toLowerCase()}">
           <td><span class="gap-severity">${gap.severity_gov}</span></td>
-          <td>${gap.description}<div class="gap-meta">${gap.pillar_name} · ${tag} ${raidBadge}</div></td>
+          <td>${escapeHtml(gap.description)}<div class="gap-meta">${escapeHtml(gap.pillar_name)} · ${escapeHtml(tag)} ${raidBadge}</div></td>
           <td>${costCell}</td>
         </tr>
       `;
@@ -124,15 +125,15 @@ export function renderRaidTable(tbody, entries, handlers) {
       (e) => `
     <tr>
       <td>${e.type}</td>
-      <td>${e.description}${e.priority ? `<div class="gap-meta">Inherited priority: ${e.priority}</div>` : ""}</td>
-      <td><input type="text" class="raid-owner-input" data-raid-id="${e.raid_id}" value="${e.owner}" /></td>
+      <td>${escapeHtml(e.description)}${e.priority ? `<div class="gap-meta">Inherited priority: ${e.priority}</div>` : ""}</td>
+      <td><input type="text" class="raid-owner-input" data-raid-id="${e.raid_id}" value="${escapeHtml(e.owner)}" /></td>
       <td>
         <select class="raid-status-select" data-raid-id="${e.raid_id}">
           ${optionsHtml(RAID_STATUSES, e.status)}
         </select>
       </td>
-      <td>${e.date_raised}</td>
-      <td><input type="date" class="raid-target-input" data-raid-id="${e.raid_id}" value="${e.target_resolution_date || ""}" /></td>
+      <td>${escapeHtml(e.date_raised)}</td>
+      <td><input type="date" class="raid-target-input" data-raid-id="${e.raid_id}" value="${escapeHtml(e.target_resolution_date || "")}" /></td>
       <td>
         <select class="raid-escalation-select" data-raid-id="${e.raid_id}">
           ${optionsHtml(ESCALATION_LEVELS, e.escalation_level)}
@@ -185,8 +186,12 @@ export function renderRaidRollup(container, entries) {
   `;
 }
 
+// steps are plain sentences from buildRecoveryPlan() (markdownExport.js) that embed
+// gap.description verbatim — that builder is also used for the raw .md export, where
+// HTML-escaping would corrupt the text, so escaping happens here at the DOM boundary
+// instead of inside the shared builder.
 export function renderRecoveryPlan(container, steps) {
-  container.innerHTML = `<ol>${steps.map((s) => `<li>${s}</li>`).join("")}</ol>`;
+  container.innerHTML = `<ol>${steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>`;
 }
 
 export function renderNfrGatewayPanel(container, rollup) {
@@ -246,23 +251,23 @@ export function renderHealthCardPreview(container, data) {
     ? `<ol>${data.rootCauses
         .map((g) => {
           const tag = g.category_tag === "Other" ? g.category_tag_freetext : g.category_tag;
-          return `<li><strong>${g.description}</strong> <span class="gap-meta">${g.pillar_name} · ${tag}, ${g.severity_gov} severity — $${g.cost.low.toLocaleString()}–$${g.cost.high.toLocaleString()}</span></li>`;
+          return `<li><strong>${escapeHtml(g.description)}</strong> <span class="gap-meta">${escapeHtml(g.pillar_name)} · ${escapeHtml(tag)}, ${g.severity_gov} severity — $${g.cost.low.toLocaleString()}–$${g.cost.high.toLocaleString()}</span></li>`;
         })
         .join("")}</ol>`
     : `<p class="empty">No material root causes identified — programme is tracking to plan.</p>`;
 
   const interventionsHtml = data.interventions.length
-    ? `<ol>${data.interventions.map((i) => `<li><strong>${i.text}</strong> — re: "${i.gapDescription}"</li>`).join("")}${data.recoverySteps
-        .map((s) => `<li>${s}</li>`)
+    ? `<ol>${data.interventions.map((i) => `<li><strong>${escapeHtml(i.text)}</strong> — re: "${escapeHtml(i.gapDescription)}"</li>`).join("")}${data.recoverySteps
+        .map((s) => `<li>${escapeHtml(s)}</li>`)
         .join("")}</ol>`
     : `<p class="empty">No governance escalation required — proceed to steering committee sign-off.</p>`;
 
   const escalationHtml = data.escalationItems.length
-    ? `<ul>${data.escalationItems.map((e) => `<li><strong>[${e.escalation_level}] ${e.description}</strong> <span class="gap-meta">${e.type}, ${e.status}</span></li>`).join("")}</ul>`
+    ? `<ul>${data.escalationItems.map((e) => `<li><strong>[${e.escalation_level}] ${escapeHtml(e.description)}</strong> <span class="gap-meta">${e.type}, ${e.status}</span></li>`).join("")}</ul>`
     : "";
 
   container.innerHTML = `
-    <h2>${data.featureName} — Strategy-to-Execution Health Card</h2>
+    <h2>${escapeHtml(data.featureName)} — Strategy-to-Execution Health Card</h2>
     <div class="summary-meta">
       <span>TOM Feasibility Score: <strong>${data.overallScore}%</strong></span>
       <span class="gate-badge gate-${data.gateDecision.toLowerCase()}">${data.gateDecision}</span>

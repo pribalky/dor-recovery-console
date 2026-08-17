@@ -29,6 +29,27 @@ assertTrue(
   "malformed sample reports a parse error"
 );
 
+const badSeverity = JSON.stringify({
+  schema_version: "1.0",
+  assessment_id: "test-bad-severity",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Test Feature",
+  overall_score: 50,
+  gate_decision: "CONDITIONAL",
+  pillars: [
+    {
+      pillar_name: "Test Pillar",
+      gaps: [{ gap_id: "GAP-1", category_tag: "PII", severity_gov: "Critical", description: "x", remediation: "x" }],
+    },
+  ],
+});
+const badSeverityResult = ingestAssessment(badSeverity);
+assertEqual(badSeverityResult.assessment, null, "an invalid severity_gov produces no assessment");
+assertTrue(
+  badSeverityResult.errors.some((e) => e.includes('invalid severity_gov "Critical"')),
+  "an invalid severity_gov is rejected with a specific message"
+);
+
 const schemaInvalid = SAMPLE_EXPORTS.find((s) => s.id === "schema_invalid");
 const invalidResult = ingestAssessment(schemaInvalid.raw);
 assertEqual(invalidResult.assessment, null, "schema-invalid sample produces no assessment");

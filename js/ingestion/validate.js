@@ -10,6 +10,7 @@ const REQUIRED_TOP_FIELDS = [
   "pillars",
 ];
 const VALID_GATE_DECISIONS = new Set(["APPROVED", "CONDITIONAL", "BLOCKED"]);
+const VALID_SEVERITIES = new Set(["High", "Med", "Low"]);
 // "1.1" and "1.2" are additive over "1.0" — same shape, progressively extended
 // category_tag enum (1.1: Safety/AssetLifecycle/SupplyChain; 1.2: + Probity) for
 // sector presets that need it. All accepted so older exports keep working — DECISIONS.md.
@@ -54,6 +55,9 @@ export function validateAssessment(data) {
           errors.push(`Gap ${gapLabel} has an unrecognised category_tag "${gap.category_tag}".`);
         } else if (gap.category_tag === "Other" && !gap.category_tag_freetext) {
           errors.push(`Gap ${gapLabel} is tagged "Other" but is missing category_tag_freetext.`);
+        }
+        if (!VALID_SEVERITIES.has(gap.severity_gov)) {
+          errors.push(`Gap ${gapLabel} has an invalid severity_gov "${gap.severity_gov}" (expected High, Med, or Low).`);
         }
       }
     }
