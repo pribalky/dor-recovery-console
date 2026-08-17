@@ -37,11 +37,12 @@
     </div>
   </header>
 
-  <div id="ingest-errors" class="errors-region no-print" role="alert"></div>
+  <main>
+    <div id="ingest-errors" class="errors-region no-print" role="alert"></div>
 
-  <div id="console-section" hidden>
-    <div class="app-shell">
-      <main class="shell-main">
+    <div id="console-section" hidden>
+      <div class="app-shell">
+        <div class="shell-main">
         <div class="tab-nav no-print" role="tablist" aria-label="Console sections">
           <button type="button" role="tab" id="tab-btn-gaps" aria-controls="tab-gaps" aria-selected="true" data-tab="gaps">Gap Analysis &amp; Financial Impact</button>
           <button type="button" role="tab" id="tab-btn-raid" aria-controls="tab-raid" aria-selected="false" data-tab="raid" tabindex="-1">RAID Log</button>
@@ -194,7 +195,7 @@
             </section>
           </div>
         </div>
-      </main>
+      </div>
 
       <aside class="app-aside no-print">
         <div id="summary-bar" class="summary-bar"></div>
@@ -209,6 +210,7 @@
 
     <section id="health-card-preview" class="panel print-section-health-card" hidden></section>
   </div>
+  </main>
 
   <footer class="app-footer no-print">
     <p>Upstream tool: <a href="https://pribalky.github.io/dor-gatekeeper/">dor-gatekeeper</a> (DoR Gatekeeper) — export its JSON to load here.</p>

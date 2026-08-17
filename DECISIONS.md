@@ -359,3 +359,15 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 **Why:** Raw score comparison, not tier-only, is the more honest signal — two loads can land in the same tier while meaningfully worsening (e.g. 16 → 34, both "Medium"), and this codebase's honesty discipline (`DECISIONS.md` #17, #27) argues against a comparison that would silently miss that. This is the same-app half of the two-part Escalation Predictor answer — `dor-gatekeeper`'s `DECISIONS.md` #38 covers the pre-sprint half, this covers the in-flight half — both built from data this app-family already has, not a trained model.
 
 **Trade-off:** Feature-name matching (trim + lowercase) catches casing/whitespace drift but not a human synonym mismatch — `"Login Flow"` vs `"Login Flow v2"` won't match even though a person would call them the same feature. Same single-browser, single-device scoping as #33 — this is one person's own load history, not a cross-user trend.
+
+---
+
+## 36. Accessibility audit — 2 real findings fixed, no design compromise
+
+**Decision:** A one-time `axe-core` audit (fetched from the npm registry into a scratch directory for the audit script only — never vendored into this repo, keeping the zero-npm-dependency posture intact) across the ingest screen and every loaded-assessment tab found and fixed 2 issues:
+- `--color-conditional` (`#93711f`, shared token also used in `dor-gatekeeper`) measured 4.24:1 against the paper background — under WCAG AA's 4.5:1 for normal text. Darkened to `#87671c` (4.92:1), same hue, imperceptible visual shift.
+- No `<main>` landmark existed on the ingest (pre-load) screen: the only `<main class="shell-main">` in the page lived inside `#console-section`, which stays `hidden` until a load succeeds. Changed that inner element to a `<div class="shell-main">` (no CSS impact — `.shell-main` was always a class selector) and wrapped both `#ingest-errors` and `#console-section` in a new outer `<main>` that's present regardless of load state.
+
+**Why:** Per this app's stated accessibility requirement, and matching the exact same audit run against `dor-gatekeeper` (see that repo's `DECISIONS.md` #40) — the color token is shared between both apps, so the fix applies identically. Treated as a one-time, human-reviewed audit rather than a standing CI dependency, same rationale as that entry.
+
+**Trade-off:** None — the color shift is imperceptible and the landmark restructuring is additive/renaming only, verified via headless browser that every existing feature (RAID table, Rework Risk panel, Executive Health Card) still renders and functions identically. A clean automated pass is not a full manual WCAG audit; flagged honestly as the scope actually covered.
