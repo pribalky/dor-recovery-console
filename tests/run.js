@@ -11,6 +11,8 @@ import "./thresholdSignals.test.js";
 import "./escapeHtml.test.js";
 import "./featureHistory.test.js";
 import "./escalationTrend.test.js";
+import "./nistRmfMap.test.js";
+import "./complianceCoverage.test.js";
 import { summary } from "./assert.js";
 
 const { passCount, failCount, failures } = summary();

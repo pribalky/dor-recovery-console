@@ -62,6 +62,7 @@ dor-recovery-console/
 │   │   ├── interventionMap.js        # category_tag → suggested governance intervention (Health Card)
 │   │   ├── raidTypeMap.js            # severity_gov/category_tag → auto-seeded RAID type (Risk/Issue/Dependency)
 │   │   ├── nfrGatewayMap.js          # category_tag → one of 4 NFR Gateways (or intentionally unmapped)
+│   │   ├── nistRmfMap.js             # category_tag → NIST AI RMF 1.0 function(s) (or intentionally unmapped)
 │   │   ├── reworkRiskConfig.js       # severity → rework-risk points, tier thresholds, remediation reference table
 │   │   └── sampleExports.js          # 9 bundled sample App 1 exports (7 valid + 2 deliberately invalid)
 │   ├── ingestion/
@@ -71,6 +72,7 @@ dor-recovery-console/
 │   │   ├── raid.js                   # seeds RAID from gaps (type via raidTypeMap), manual entries, rollups
 │   │   ├── sort.js                   # 3 sort lenses over the same gap list
 │   │   ├── nfrGateway.js             # rolls exposure up by NFR Gateway
+│   │   ├── complianceCoverage.js     # rolls exposure.gaps up by NIST AI RMF function
 │   │   ├── reworkRisk.js             # computes the rework-risk score and tier
 │   │   ├── driftCompare.js           # matches two gap lists by gap_id: new / resolved / severity-changed
 │   │   ├── deepLink.js               # parses ?sample=&health-card=1#tab= from the portal
@@ -91,6 +93,8 @@ dor-recovery-console/
 │   ├── raid.test.js                  # RAID seeding + type classification, rollups, all 3 sort lenses
 │   ├── export.test.js                # recovery plan + markdown + Health Card export content
 │   ├── nfrGateway.test.js            # gateway mapping + rollup, hand-verified against a sample
+│   ├── nistRmfMap.test.js            # NIST function mapping, valid ids, intentional gaps
+│   ├── complianceCoverage.test.js    # NIST rollup, hand-verified against a sample
 │   ├── reworkRisk.test.js            # score/tier boundaries + hand-verified sample scores
 │   ├── adrExport.test.js             # ADR draft section content
 │   ├── driftCompare.test.js          # new/resolved/severity-changed classification, hand-built pairs
