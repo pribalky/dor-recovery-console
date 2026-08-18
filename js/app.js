@@ -51,6 +51,7 @@ const els = {
   exportHealthCardBtn: document.getElementById("export-health-card-btn"),
   exportAdrBtn: document.getElementById("export-adr-btn"),
   printRecoveryBtn: document.getElementById("print-recovery-btn"),
+  viewHealthCardBtn: document.getElementById("view-health-card-btn"),
   healthCardPreview: document.getElementById("health-card-preview"),
   resetBtn: document.getElementById("reset-btn"),
   raidForm: document.getElementById("raid-form"),
@@ -244,6 +245,16 @@ function recompute() {
   }
 
   return exposure;
+}
+
+// Shared by the "Export" (download + preview) and "View" (preview only) buttons —
+// renders the on-screen preview so "Print Health Card" has real DOM content to print
+// (a downloaded .md file alone can't be captured by window.print()), then scrolls it
+// into view.
+function openHealthCardPreview(exposure) {
+  els.healthCardPreview.hidden = false;
+  renderHealthCard(exposure);
+  els.healthCardPreview.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderHealthCard(exposure) {
@@ -441,12 +452,15 @@ function init() {
     if (!exposure) return;
     const md = buildExecutiveHealthCard(state.assessment, exposure, state.raidEntries);
     downloadFile(exportFilenameHealthCard(state.assessment.feature_name, state.assessment.assessment_id), md, "text/markdown");
+    openHealthCardPreview(exposure);
+  });
 
-    // Also render the on-screen preview so "Print Health Card" has real DOM content
-    // to print — a downloaded .md file alone can't be captured by window.print().
-    els.healthCardPreview.hidden = false;
-    renderHealthCard(exposure);
-    els.healthCardPreview.scrollIntoView({ behavior: "smooth", block: "start" });
+  // View-only: opens the same on-screen preview without downloading a file each
+  // time — for opening it "when required" rather than as a side effect of exporting.
+  els.viewHealthCardBtn.addEventListener("click", () => {
+    const exposure = recompute();
+    if (!exposure) return;
+    openHealthCardPreview(exposure);
   });
 
   els.exportAdrBtn.addEventListener("click", () => {

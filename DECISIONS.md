@@ -401,3 +401,13 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 **Why:** Requested directly, same motivation as the Escalation Demo pair (#37) — Baseline Drift needs two inputs (a Baseline paste and a Current load) to show anything, so a first-time visitor has no way to see a real 3-category diff without either hand-building two JSON exports or getting lucky with two dissimilar bundled samples that don't represent a coherent "same feature over time" story.
 
 **Trade-off:** `drift_demo_baseline` is also listed in the main sample dropdown (so it's testable via the same `tests/ingestion.test.js` loop as every other sample) — a user could load it as "Current" by mistake instead of using the dedicated "Load Sample Baseline" button; the button's label and the tab's inline instructions are the only guardrail against that confusion.
+
+---
+
+## 40. "View Strategy-to-Execution Health Card" — a preview-only button, separate from "Export"
+
+**Decision:** New `#view-health-card-btn` in the aside, beneath the other export buttons. Its click handler calls a new shared `openHealthCardPreview(exposure)` (renders the preview, unhides it, scrolls it into view) without calling `downloadFile()`. The existing "Export Executive Health Card" button now calls that same shared function after its download, so both buttons render identically — the only difference is whether a file also downloads.
+
+**Why:** Requested directly — "Export Executive Health Card" always did two things at once (download a `.md` file *and* render the on-screen preview, #22), with no way to just open the preview to check something without also triggering a download every time. "View" is the read-only half, "Export" stays the download+preview combination it always was, for a user who does want the file.
+
+**Trade-off:** None — purely additive, and the refactor (extracting `openHealthCardPreview`) removed duplication rather than adding any.
