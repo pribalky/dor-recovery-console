@@ -411,3 +411,13 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 **Why:** Requested directly — "Export Executive Health Card" always did two things at once (download a `.md` file *and* render the on-screen preview, #22), with no way to just open the preview to check something without also triggering a download every time. "View" is the read-only half, "Export" stays the download+preview combination it always was, for a user who does want the file.
 
 **Trade-off:** None — purely additive, and the refactor (extracting `openHealthCardPreview`) removed duplication rather than adding any.
+
+---
+
+## 41. In-flight escalation flag renamed to "Predictive Escalation Alert" — content only, no logic changed
+
+**Decision:** The Rework Risk & Remediation panel's warning tag (#35) now reads *"⚠ Predictive Escalation Alert — Rework Risk score rose from {prior} to {current} since this feature was last loaded ({date})."* — was *"⚠ Escalating — ..."*. Same computation, same `deriveEscalationTrend()`, same `escalation-trend-tag` CSS class and DOM structure — only the rendered label text changed, in `js/ui/render.js`'s `renderReworkRiskPanel()`. README updated to match; the internal module/function names (`js/engine/escalationTrend.js`, `deriveEscalationTrend`) are left as-is, same as every other prior relabeling in this codebase (#32) — the name that changes is what a person reads, not the implementation.
+
+**Why:** Requested directly — "Predictive Escalation Alert" names what the feature actually does (flags an in-flight collapse before the sprint review happens) more directly than "Escalating," and matches the framing already used for its pre-sprint counterpart in `dor-gatekeeper` (`DECISIONS.md` #38's "Escalation Likelihood" — together the two are this app-family's answer to the originating review's "Escalation Predictor" ask).
+
+**Trade-off:** None — content-only change, no behavior difference.

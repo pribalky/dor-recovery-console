@@ -227,7 +227,7 @@ export function renderReworkRiskPanel(container, { score, tier, escalationText, 
   ).join("");
 
   const escalationTag = escalation?.escalating
-    ? `<p class="escalation-trend-tag">⚠ Escalating — Rework Risk score rose from ${escalation.priorScore} to ${score} since this feature was last loaded (${new Date(escalation.priorTimestamp).toLocaleDateString()}).</p>`
+    ? `<p class="escalation-trend-tag">⚠ <strong>Predictive Escalation Alert</strong> — Rework Risk score rose from ${escalation.priorScore} to ${score} since this feature was last loaded (${new Date(escalation.priorTimestamp).toLocaleDateString()}).</p>`
     : "";
 
   container.innerHTML = `
