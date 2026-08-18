@@ -322,6 +322,25 @@ button.secondary {
   gap: 0.5rem;
 }
 
+.export-buttons a {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 0.55rem 1.05rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.export-buttons a:hover {
+  background: var(--color-surface-2);
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;

@@ -445,3 +445,15 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 262 tests passing (up from 256).
 
 **Trade-off:** None beyond #42's own — this is purely a presentation layer over already-validated data.
+
+---
+
+## 44. Persistent "Strategy-to-Execution Control Plane" link in the aside (shared with `dor-gatekeeper` #50)
+
+**Decision:** Added a plain `<a href="https://pribalky.github.io/dor-gatekeeper/portal.html" class="secondary">Strategy-to-Execution Control Plane →</a>` as the last item in the aside's `.export-buttons` block, alongside the export buttons. `.export-buttons a` gained its own CSS rule mirroring the existing `button`/`button.secondary` box model, since no anchor styling previously existed there. Absolute URL, same convention already used for this app's own footer's "Upstream tool" link to `dor-gatekeeper` — these are two independently-deployed GitHub Pages apps, so a relative link wouldn't resolve. Plain static navigation, not a JS-wired button.
+
+**Why:** Confirmed via direct read of `index.html` that the aside never linked to the portal at all before this — it was only discoverable if you already knew to start there. `dor-gatekeeper` has the identical gap and gets the identical fix (its own `DECISIONS.md` #50, relative-linked since the portal lives in that same repo) — this is a shared, cross-referenced decision like #1-#10. Verified via headless browser: the link renders in the aside with the correct text and absolute href, computed `display` confirms it renders as a button-styled block element, not an unstyled inline link. Zero console errors.
+
+262 tests passing (unchanged — a static link needs no new test).
+
+**Trade-off:** None — additive, static navigation with no behavior to regress.
