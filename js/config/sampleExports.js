@@ -4,10 +4,12 @@
 // presets — together they exercise realistic, varied input across the financial/RAID/
 // exec-summary modules. escalation_demo_before/after are a matched pair (same
 // feature_name, deliberately worse the second time) that demonstrate the escalation-
-// trend feature end to end when loaded in order. malformed/schema_invalid are
-// deliberately invalid, to exercise the explicit ingestion-rejection paths required by
-// the PRD. Every fixture here is also asserted against directly in
-// tests/ingestion.test.js — the dropdown is provably correct.
+// trend feature end to end when loaded in order. drift_demo_baseline/current are
+// another matched pair (same feature_name; one resolved gap, one severity-improved
+// gap, two new gaps) that demonstrate the Baseline Drift tab's 3-category diff end to
+// end. malformed/schema_invalid are deliberately invalid, to exercise the explicit
+// ingestion-rejection paths required by the PRD. Every fixture here is also asserted
+// against directly in tests/ingestion.test.js — the dropdown is provably correct.
 
 const bestExport = {
   schema_version: "1.0",
@@ -311,6 +313,75 @@ const escalationDemoAfterExport = {
   ],
 };
 
+// Baseline Drift Demo pair — same feature_name, an earlier "baseline" checkpoint and
+// a later "current" one, crafted so all 3 diff categories are non-empty when compared:
+// GAP-DRIFT-1 is resolved (present in baseline only), GAP-DRIFT-2 has its severity
+// improve High -> Med, GAP-DRIFT-3 persists unchanged (so it correctly does NOT show
+// up in the diff), and GAP-DRIFT-4/5 are new since baseline.
+const driftDemoBaselineExport = {
+  schema_version: "1.0",
+  assessment_id: "sample-drift-demo-baseline-0000",
+  assessment_date: "2026-01-01T00:00:00.000Z",
+  feature_name: "Sample: Baseline Drift Demo — Checkout Redesign",
+  overall_score: 78,
+  gate_decision: "CONDITIONAL",
+  pillars: [
+    { pillar_name: "Architectural & Data Lineage Feasibility", pillar_score: 100, gaps: [] },
+    { pillar_name: "Responsible AI & Safety Assurance", pillar_score: 100, gaps: [] },
+    {
+      pillar_name: "Data Governance & Regulatory Compliance",
+      pillar_score: 80,
+      gaps: [
+        { gap_id: "GAP-DRIFT-2", description: "PII masking on card number field not validated", severity_gov: "High", category_tag: "PII" },
+      ],
+    },
+    {
+      pillar_name: "Operational Readiness & Resilience",
+      pillar_score: 60,
+      gaps: [
+        { gap_id: "GAP-DRIFT-1", description: "Retry logic for payment timeout undefined", severity_gov: "Med", category_tag: "Fallback" },
+        { gap_id: "GAP-DRIFT-3", description: "Rate limiting for checkout API not configured", severity_gov: "Med", category_tag: "RateLimit" },
+      ],
+    },
+    { pillar_name: "Definition of Ready Completeness", pillar_score: 100, gaps: [] },
+  ],
+};
+
+const driftDemoCurrentExport = {
+  schema_version: "1.0",
+  assessment_id: "sample-drift-demo-current-0000",
+  assessment_date: "2026-01-20T00:00:00.000Z",
+  feature_name: "Sample: Baseline Drift Demo — Checkout Redesign",
+  overall_score: 70,
+  gate_decision: "CONDITIONAL",
+  pillars: [
+    { pillar_name: "Architectural & Data Lineage Feasibility", pillar_score: 100, gaps: [] },
+    { pillar_name: "Responsible AI & Safety Assurance", pillar_score: 100, gaps: [] },
+    {
+      pillar_name: "Data Governance & Regulatory Compliance",
+      pillar_score: 70,
+      gaps: [
+        { gap_id: "GAP-DRIFT-2", description: "PII masking on card number field not validated", severity_gov: "Med", category_tag: "PII" },
+        { gap_id: "GAP-DRIFT-4", description: "New consent capture requirement introduced by legal review", severity_gov: "High", category_tag: "Consent" },
+      ],
+    },
+    {
+      pillar_name: "Operational Readiness & Resilience",
+      pillar_score: 70,
+      gaps: [
+        { gap_id: "GAP-DRIFT-3", description: "Rate limiting for checkout API not configured", severity_gov: "Med", category_tag: "RateLimit" },
+      ],
+    },
+    {
+      pillar_name: "Definition of Ready Completeness",
+      pillar_score: 90,
+      gaps: [
+        { gap_id: "GAP-DRIFT-5", description: "SLA for checkout latency not agreed", severity_gov: "Low", category_tag: "NFR" },
+      ],
+    },
+  ],
+};
+
 // Deliberately invalid: not parseable JSON (missing comma after assessment_id).
 const malformedRaw = `{
   "schema_version": "1.0",
@@ -349,7 +420,13 @@ export const VALID_SAMPLE_ASSESSMENTS = {
   public_sector_good: publicSectorGoodExport,
   escalation_demo_before: escalationDemoBeforeExport,
   escalation_demo_after: escalationDemoAfterExport,
+  drift_demo_baseline: driftDemoBaselineExport,
+  drift_demo_current: driftDemoCurrentExport,
 };
+
+// Dedicated export so the Baseline Drift tab's "Load Sample Baseline" button can
+// fill the paste box directly, without needing a second sample-select control there.
+export const DRIFT_DEMO_BASELINE_RAW = JSON.stringify(driftDemoBaselineExport, null, 2);
 
 export const SAMPLE_EXPORTS = [
   { id: "best", label: "Best — fully ready (valid)", raw: JSON.stringify(bestExport, null, 2) },
@@ -361,6 +438,8 @@ export const SAMPLE_EXPORTS = [
   { id: "public_sector_good", label: "Public Sector — Good (valid, schema 1.2)", raw: JSON.stringify(publicSectorGoodExport, null, 2) },
   { id: "escalation_demo_before", label: "Escalation Demo — Sprint 3 baseline (valid, load 1st)", raw: JSON.stringify(escalationDemoBeforeExport, null, 2) },
   { id: "escalation_demo_after", label: "Escalation Demo — Sprint 5 worsened (valid, load 2nd to see the trend)", raw: JSON.stringify(escalationDemoAfterExport, null, 2) },
+  { id: "drift_demo_baseline", label: "Baseline Drift Demo — Baseline checkpoint (valid)", raw: DRIFT_DEMO_BASELINE_RAW },
+  { id: "drift_demo_current", label: "Baseline Drift Demo — Current checkpoint (valid, load as Current)", raw: JSON.stringify(driftDemoCurrentExport, null, 2) },
   { id: "malformed", label: "Malformed JSON (invalid — tests parse error)", raw: malformedRaw },
   { id: "schema_invalid", label: "Schema-Invalid Export (invalid — tests validation errors)", raw: JSON.stringify(schemaInvalidExport, null, 2) },
 ];

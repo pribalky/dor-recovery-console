@@ -12,6 +12,8 @@ for (const id of [
   "public_sector_good",
   "escalation_demo_before",
   "escalation_demo_after",
+  "drift_demo_baseline",
+  "drift_demo_current",
 ]) {
   const sample = SAMPLE_EXPORTS.find((s) => s.id === id);
   const { assessment, errors } = ingestAssessment(sample.raw);

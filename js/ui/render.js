@@ -292,6 +292,7 @@ export function renderHealthCardPreview(container, data) {
 
     <div class="export-buttons no-print">
       <button id="print-health-card-btn" type="button">Print Health Card</button>
+      <button id="close-health-card-btn" type="button" class="secondary">Close Preview</button>
     </div>
   `;
 }

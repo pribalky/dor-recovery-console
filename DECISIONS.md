@@ -381,3 +381,23 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 **Why:** Requested directly — the escalation-trend feature needs two loads of the same feature to show anything, so without a matching sample pair a first-time visitor has no way to see it work without constructing their own before/after JSON by hand. The alternative — pre-seeding a synthetic prior entry into `dor:featureHistory` so a single load shows the tag immediately — was rejected: it would mean this app writes fabricated diagnostic data into its own real signal store, the first time either app in this session would have done that, breaking the "genuine, not narrative" discipline every prior `localStorage` decision here has held to (#33, #35).
 
 **Trade-off:** Requires two dropdown selections (load "before", then "after") to see the feature demonstrated, rather than one — an honest cost of not fabricating data to save a click.
+
+---
+
+## 38. Health Card preview gets a "Close Preview" button — it has no other way to dismiss
+
+**Decision:** `renderHealthCardPreview()` (`js/ui/render.js`) now renders a "Close Preview" button next to "Print Health Card". Its click handler sets `els.healthCardPreview.hidden = true` and clears its `innerHTML` — the exact same two lines the Reset button already runs, just without resetting the loaded assessment, RAID entries, or anything else. Wired the same way "Print Health Card" already is: a fresh listener attached after every re-render, since the whole section's `innerHTML` is replaced on each `recompute()`.
+
+**Why:** `#health-card-preview` deliberately lives outside the tab-panel system (#22) so it persists across tab switches and stays print-scoped correctly — expected behavior, not a bug, but it meant the only way to dismiss it was a full Reset. A user who opened it just to check a number, then wants it out of the way while working the RAID tab, shouldn't have to lose their loaded assessment to do that.
+
+**Trade-off:** None — purely additive; `recompute()`'s existing `if (!els.healthCardPreview.hidden)` guard already skips re-rendering once closed, so no new state tracking was needed.
+
+---
+
+## 39. Baseline Drift Demo pair — a matched checkpoint pair, hand-verified to exercise all 3 diff categories
+
+**Decision:** Two new bundled samples, `drift_demo_baseline` / `drift_demo_current`, sharing one `feature_name` ("Sample: Baseline Drift Demo — Checkout Redesign") and crafted so `compareGapSets()` produces a non-empty result in every category: 1 resolved gap, 1 severity-improved gap (High → Med), 2 new gaps, plus one gap that persists unchanged (correctly absent from the diff). Hand-verified in `tests/driftCompare.test.js`, same discipline as the pure-function fixture already there. A new "Load Sample Baseline" button in the Baseline Drift tab fills `#drift-baseline-input` directly from `DRIFT_DEMO_BASELINE_RAW` — the Baseline Drift tab takes free-text paste/upload rather than a dropdown selection (it's comparing against whatever is already loaded as Current), so a fill-in button is the natural equivalent of picking a sample from a `<select>`.
+
+**Why:** Requested directly, same motivation as the Escalation Demo pair (#37) — Baseline Drift needs two inputs (a Baseline paste and a Current load) to show anything, so a first-time visitor has no way to see a real 3-category diff without either hand-building two JSON exports or getting lucky with two dissimilar bundled samples that don't represent a coherent "same feature over time" story.
+
+**Trade-off:** `drift_demo_baseline` is also listed in the main sample dropdown (so it's testable via the same `tests/ingestion.test.js` loop as every other sample) — a user could load it as "Current" by mistake instead of using the dedicated "Load Sample Baseline" button; the button's label and the tab's inline instructions are the only guardrail against that confusion.

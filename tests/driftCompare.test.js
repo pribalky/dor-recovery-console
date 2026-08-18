@@ -1,5 +1,7 @@
 import { assertEqual, assertTrue } from "./assert.js";
 import { compareGapSets } from "../js/engine/driftCompare.js";
+import { flattenGaps } from "../js/engine/financialTranslator.js";
+import { VALID_SAMPLE_ASSESSMENTS } from "../js/config/sampleExports.js";
 
 const baselineGaps = [
   { gap_id: "GAP-A", description: "GDPR requirements confirmed", severity_gov: "High", category_tag: "PII" },
@@ -43,3 +45,21 @@ assertEqual(fromEmpty.resolvedGaps.length, 0, "an empty baseline has nothing to 
 const toEmpty = compareGapSets(baselineGaps, []);
 assertEqual(toEmpty.resolvedGaps.length, baselineGaps.length, "an empty current export resolves every baseline gap");
 assertEqual(toEmpty.newGaps.length, 0, "an empty current export introduces no new gaps");
+
+// The bundled Baseline Drift Demo pair — hand-verified so the dropdown's demo is
+// provably correct, same discipline as every other sample in this suite.
+const demoDrift = compareGapSets(
+  flattenGaps(VALID_SAMPLE_ASSESSMENTS.drift_demo_baseline),
+  flattenGaps(VALID_SAMPLE_ASSESSMENTS.drift_demo_current)
+);
+assertEqual(demoDrift.newGaps.length, 2, "the demo pair introduces exactly 2 new gaps");
+assertTrue(
+  demoDrift.newGaps.every((g) => ["GAP-DRIFT-4", "GAP-DRIFT-5"].includes(g.gap_id)),
+  "the demo pair's new gaps are GAP-DRIFT-4 and GAP-DRIFT-5"
+);
+assertEqual(demoDrift.resolvedGaps.length, 1, "the demo pair resolves exactly 1 gap");
+assertEqual(demoDrift.resolvedGaps[0].gap_id, "GAP-DRIFT-1", "the demo pair's resolved gap is GAP-DRIFT-1");
+assertEqual(demoDrift.severityChanged.length, 1, "the demo pair changes exactly 1 gap's severity");
+assertEqual(demoDrift.severityChanged[0].gap_id, "GAP-DRIFT-2", "the demo pair's severity-changed gap is GAP-DRIFT-2");
+assertEqual(demoDrift.severityChanged[0].from, "High", "the demo pair's severity change starts at High");
+assertEqual(demoDrift.severityChanged[0].to, "Med", "the demo pair's severity change improves to Med");

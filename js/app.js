@@ -1,4 +1,4 @@
-import { SAMPLE_EXPORTS } from "./config/sampleExports.js";
+import { SAMPLE_EXPORTS, DRIFT_DEMO_BASELINE_RAW } from "./config/sampleExports.js";
 import { ingestAssessment } from "./ingestion/validate.js";
 import { flattenGaps, computeExposure } from "./engine/financialTranslator.js";
 import { seedRaidFromGaps, createManualEntry } from "./engine/raid.js";
@@ -58,6 +58,7 @@ const els = {
   assumpScale: document.getElementById("assump-scale"),
   driftBaselineInput: document.getElementById("drift-baseline-input"),
   driftBaselineFile: document.getElementById("drift-baseline-file"),
+  driftLoadSampleBtn: document.getElementById("drift-load-sample-btn"),
   driftCompareBtn: document.getElementById("drift-compare-btn"),
   driftErrors: document.getElementById("drift-errors"),
   driftResult: document.getElementById("drift-result"),
@@ -252,6 +253,11 @@ function renderHealthCard(exposure) {
   printBtn?.addEventListener("click", () => {
     document.body.classList.add("printing-health-card");
     window.print();
+  });
+  const closeBtn = document.getElementById("close-health-card-btn");
+  closeBtn?.addEventListener("click", () => {
+    els.healthCardPreview.hidden = true;
+    els.healthCardPreview.innerHTML = "";
   });
 }
 
@@ -471,6 +477,11 @@ function init() {
       els.driftBaselineInput.value = reader.result;
     };
     reader.readAsText(file);
+  });
+
+  els.driftLoadSampleBtn.addEventListener("click", () => {
+    els.driftBaselineInput.value = DRIFT_DEMO_BASELINE_RAW;
+    showErrors(els.driftErrors, []);
   });
 
   els.driftCompareBtn.addEventListener("click", handleDriftCompare);
