@@ -49,11 +49,15 @@ assertTrue(healthCard.includes("TOM Feasibility Score"), "health card includes t
 assertTrue(healthCard.includes("Top 3 Root Causes of Operational Rework"), "health card includes the root causes section");
 assertTrue(healthCard.includes("Recommended Executive Actions & Governance Interventions"), "health card includes the interventions section");
 assertTrue(healthCard.includes(gappyAssessment.feature_name), "health card includes the feature name");
+assertTrue(healthCard.includes("**Compliance Coverage:**"), "health card includes the Compliance Coverage line for a gappy assessment");
+assertTrue(healthCard.includes("NIST AI RMF"), "health card's Compliance Coverage line names NIST AI RMF");
+assertTrue(healthCard.includes("not a certification"), "health card's Compliance Coverage line is explicitly disclaimed, not a compliance claim");
 
 const cleanRaid = seedRaidFromGaps([], "2026-01-01");
 const cleanHealthCard = buildExecutiveHealthCard(VALID_SAMPLE_ASSESSMENTS.best, cleanExposure, cleanRaid);
 assertTrue(cleanHealthCard.includes("tracking to plan"), "a fully-ready assessment's health card reports no material root causes");
 assertTrue(cleanHealthCard.includes("No governance escalation required"), "a fully-ready assessment's health card requires no escalation");
+assertTrue(!cleanHealthCard.includes("**Compliance Coverage:**"), "a fully-ready assessment with zero gaps has no Compliance Coverage line to show");
 
 assertEqual(interventionFor("Safety"), "Convene Safety Case Review Board", "Safety gaps map to a safety-case-specific intervention");
 assertEqual(interventionFor("PII"), "Escalate to Data Protection Officer / Privacy Office", "PII gaps map to a privacy-specific intervention");
@@ -74,3 +78,7 @@ assertEqual(healthCardData.gateDecision, gappyAssessment.gate_decision, "health 
 assertEqual(healthCardData.rootCauses.length, Math.min(3, exposure.gaps.filter((g) => !g.cost.unmodeled).length), "health card data's root causes match the same top-3-by-exposure logic as the Markdown export");
 assertEqual(healthCardData.interventions.length, healthCardData.rootCauses.length, "health card data has one intervention per root cause");
 assertTrue(Array.isArray(healthCardData.escalationItems), "health card data exposes escalationItems as an array");
+assertTrue(Boolean(healthCardData.complianceCoverageNote), "health card data carries a complianceCoverageNote for a gappy assessment");
+
+const cleanHealthCardData = buildHealthCardData(VALID_SAMPLE_ASSESSMENTS.best, cleanExposure, cleanRaid);
+assertEqual(cleanHealthCardData.complianceCoverageNote, null, "a fully-ready assessment's health card data has no complianceCoverageNote");

@@ -1,5 +1,6 @@
 import { topExposureGaps, buildRecoveryPlan, slugify } from "./markdownExport.js";
 import { interventionFor } from "../config/interventionMap.js";
+import { deriveComplianceCoverage } from "../engine/complianceCoverage.js";
 
 // Single source of truth for the Health Card's content — consumed by both the
 // Markdown export and the on-screen preview (renderHealthCardPreview in ui/render.js)
@@ -20,6 +21,16 @@ export function buildHealthCardData(assessment, exposure, raidEntries) {
       ? `Catching these gaps before commitment protects $${exposure.totalLow.toLocaleString()}–$${exposure.totalHigh.toLocaleString()} of capital from being spent on rework.`
       : null;
 
+  // NIST-only, never OWASP — the App1->App2 JSON contract this app ingests only ever
+  // carries gap_id/description/severity_gov/category_tag per gap; the AI Governance
+  // Router's OWASP hazard flags live entirely on dor-gatekeeper's side and have no
+  // path into this data (DECISIONS.md #42).
+  const coverage = deriveComplianceCoverage(exposure.gaps);
+  const complianceCoverageNote =
+    coverage.totalGaps > 0
+      ? `This assessment's flagged gaps map to ${coverage.functionsTouched.length} of ${coverage.totalFunctions} NIST AI RMF functions${coverage.functionsTouched.length > 0 ? ` (${coverage.functionsTouched.join(", ")})` : ""}${coverage.unmappedCount > 0 ? ` — ${coverage.unmappedCount} gap(s) fall outside NIST AI RMF's scope` : ""}. A coverage reference only, not a certification of NIST AI RMF or EU AI Act compliance, which a static client-side tool cannot attest to.`
+      : null;
+
   return {
     featureName: assessment.feature_name,
     overallScore: assessment.overall_score,
@@ -29,6 +40,7 @@ export function buildHealthCardData(assessment, exposure, raidEntries) {
     pendingManualCostCount: exposure.pendingManualCostCount,
     utilisationImpactPct: exposure.utilisationImpactPct,
     protectedCapitalNote,
+    complianceCoverageNote,
     rootCauses,
     interventions,
     recoverySteps,
@@ -49,6 +61,9 @@ export function buildExecutiveHealthCard(assessment, exposure, raidEntries) {
   lines.push(`- **Total Financial Exposure:** $${data.totalLow.toLocaleString()} – $${data.totalHigh.toLocaleString()}`);
   if (data.protectedCapitalNote) {
     lines.push(`- **Protected Capital:** ${data.protectedCapitalNote}`);
+  }
+  if (data.complianceCoverageNote) {
+    lines.push(`- **Compliance Coverage:** ${data.complianceCoverageNote}`);
   }
   if (data.pendingManualCostCount > 0) {
     lines.push(`- **Pending Manual Costing:** ${data.pendingManualCostCount} item(s) not yet included above.`);

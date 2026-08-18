@@ -433,3 +433,15 @@ New `js/engine/escalationTrend.js`, `deriveEscalationTrend(history, featureNameK
 256 tests passing (up from 224).
 
 **Trade-off:** `category_tag` is a coarse, cross-cutting tag (same limitation `nfrGatewayMap.js` already accepted) — a single tag like "NFR" covers everything from RACI definition to monitoring/alerting, so the NIST mapping is directionally honest, not a precise per-gap risk classification. Acceptable for a coverage reference, not acceptable if ever mistaken for a certified compliance assessment (hence the explicit disclaiming language wherever this surfaces).
+
+---
+
+## 43. Compliance Coverage line on the Executive Health Card — NIST-only, explicitly disclaimed
+
+**Decision:** `buildHealthCardData()` gains `complianceCoverageNote`, derived from `deriveComplianceCoverage(exposure.gaps)` (`DECISIONS.md` #42), following the exact same optional-note pattern as `protectedCapitalNote` (`DECISIONS.md` #32) — `null` when there are no gaps, an explicit sentence otherwise: *"This assessment's flagged gaps map to N of 4 NIST AI RMF functions (...) — M gap(s) fall outside NIST AI RMF's scope. A coverage reference only, not a certification of NIST AI RMF or EU AI Act compliance, which a static client-side tool cannot attest to."* Surfaced in both `buildExecutiveHealthCard()`'s Markdown (a `**Compliance Coverage:**` bullet next to Protected Capital) and `renderHealthCardPreview()`'s on-screen preview (same `.utilisation-summary` styling as the Protected Capital line) — single source of truth, so the two can't drift.
+
+**Why:** Requested as part of the same director-level pitch as #42, to make the NIST coverage data visible where an executive would actually read it, not buried in a config file. Deliberately **not** an OWASP line — this app's data (the App1→App2 JSON contract) has no path to the AI Governance Router's OWASP hazard flags, so an OWASP claim here would have no real data behind it (#42's reasoning, reapplied). The disclaimer sentence is non-negotiable and appears every time the note renders, matching this project's standing "never fabricate a capability" discipline — a coverage reference is genuinely useful to a director-level reader, but only if it's never mistaken for a certification this static tool cannot actually provide. Verified via `tests/export.test.js`: a gappy assessment's Health Card and health-card-data both include the Compliance Coverage line, name NIST AI RMF, and carry the "not a certification" disclaimer; a fully-ready assessment (zero gaps) correctly has no Compliance Coverage line at all — nothing to report, not an empty claim. Headless-browser check against `?sample=very_bad&health-card=1#tab=recovery` confirms the on-screen preview renders the same NIST AI RMF line and disclaimer as the Markdown export. Zero console errors.
+
+262 tests passing (up from 256).
+
+**Trade-off:** None beyond #42's own — this is purely a presentation layer over already-validated data.
