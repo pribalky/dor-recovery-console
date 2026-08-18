@@ -40,9 +40,8 @@
   <main>
     <div id="ingest-errors" class="errors-region no-print" role="alert"></div>
 
-    <div id="console-section" hidden>
-      <div class="app-shell">
-        <div class="shell-main">
+    <div class="app-shell">
+      <div id="console-section" class="shell-main" hidden>
         <div class="tab-nav no-print" role="tablist" aria-label="Console sections">
           <button type="button" role="tab" id="tab-btn-gaps" aria-controls="tab-gaps" aria-selected="true" data-tab="gaps">Gap Analysis &amp; Financial Impact</button>
           <button type="button" role="tab" id="tab-btn-raid" aria-controls="tab-raid" aria-selected="false" data-tab="raid" tabindex="-1">RAID Log</button>
@@ -200,20 +199,19 @@
       </div>
 
       <aside class="app-aside no-print">
-        <div id="summary-bar" class="summary-bar"></div>
+        <div id="summary-bar" class="summary-bar"><p class="empty">Load an assessment above to enable exports.</p></div>
         <div class="export-buttons">
-          <button id="export-md-btn" type="button">Export Markdown</button>
-          <button id="export-health-card-btn" type="button">Export Executive Health Card</button>
-          <button id="export-adr-btn" type="button">Export ADR Draft</button>
-          <button id="print-recovery-btn" type="button" class="secondary">Print / Save as PDF</button>
-          <button id="view-health-card-btn" type="button" class="secondary">View Strategy-to-Execution Health Card</button>
+          <button id="export-md-btn" type="button" disabled>Export Markdown</button>
+          <button id="export-health-card-btn" type="button" disabled>Export Executive Health Card</button>
+          <button id="export-adr-btn" type="button" disabled>Export ADR Draft</button>
+          <button id="print-recovery-btn" type="button" class="secondary" disabled>Print / Save as PDF</button>
+          <button id="view-health-card-btn" type="button" class="secondary" disabled>View Strategy-to-Execution Health Card</button>
           <a href="https://pribalky.github.io/dor-gatekeeper/portal.html" class="secondary">Strategy-to-Execution Control Plane →</a>
         </div>
       </aside>
     </div>
 
     <section id="health-card-preview" class="panel print-section-health-card" hidden></section>
-  </div>
   </main>
 
   <footer class="app-footer no-print">

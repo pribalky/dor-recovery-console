@@ -159,6 +159,8 @@ dor-recovery-console/
 - **NIST AI RMF Compliance Coverage** — `js/config/nistRmfMap.js` maps each gap's `category_tag` to the NIST AI RMF 1.0 function(s) it touches (Govern/Map/Measure/Manage), rolled up by `js/engine/complianceCoverage.js`'s `deriveComplianceCoverage()` and surfaced on the Health Card as an honestly-disclaimed coverage reference, never a compliance certification. Deliberately NIST-only: the App 1→App 2 JSON contract never carries the AI Governance Router's OWASP hazard flags, so this app has no data to back an OWASP claim (`DECISIONS.md` #42-43).
 
 **Persona portal** — this app's aside carries a permanent **"Strategy-to-Execution Control Plane →"** link (absolute, to `dor-gatekeeper`'s `portal.html`) alongside the export buttons, so the persona-routed portal is discoverable from inside this app too, not only if you already know to start there (`DECISIONS.md` #44).
+
+**Always-visible aside** — the sidebar (summary + export/view buttons + the Control Plane link) renders on every visit to `index.html`, not only after arriving via the portal's deep link. Before any assessment loads, the 5 assessment-dependent buttons (Export Markdown/Health Card/ADR, Print, **View Strategy-to-Execution Health Card**) show disabled — visibly muted, not silently a no-op — and enable the moment a valid assessment loads, whether via paste, file upload, sample dropdown, or portal deep link (`DECISIONS.md` #45).
 - **ADR draft** — a standard Status/Context/Decision/Consequences record, auto-populated from the top exposure gaps and the same recovery-plan steps.
 - **Print / Save as PDF** — native browser print, no PDF library.
 

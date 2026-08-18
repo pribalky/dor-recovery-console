@@ -188,11 +188,24 @@ function readEscalationTrendSafe(assessment, reworkScore, reworkTier) {
   return deriveEscalationTrend(history, featureNameKeyFor(assessment), assessment.assessment_id, reworkScore, reworkTier);
 }
 
+// The aside (export/view buttons + the persistent Control Plane link) is always
+// visible — only the tab content (#console-section) hides pre-load. These 5 buttons
+// need real assessment data to produce anything, so they stay disabled until one
+// loads, rather than being clickable-but-silently-a-no-op.
+const ASSESSMENT_DEPENDENT_BUTTONS = [els.exportMdBtn, els.exportHealthCardBtn, els.exportAdrBtn, els.printRecoveryBtn, els.viewHealthCardBtn];
+const SUMMARY_BAR_EMPTY_HTML = '<p class="empty">Load an assessment above to enable exports.</p>';
+
+function setAssessmentDependentButtonsEnabled(enabled) {
+  ASSESSMENT_DEPENDENT_BUTTONS.forEach((btn) => (btn.disabled = !enabled));
+}
+
 function handleLoad(text) {
   const { assessment, errors } = ingestAssessment(text);
   showErrors(els.ingestErrors, errors);
   if (!assessment) {
     els.consoleSection.hidden = true;
+    setAssessmentDependentButtonsEnabled(false);
+    els.summaryBar.innerHTML = SUMMARY_BAR_EMPTY_HTML;
     return;
   }
 
@@ -204,6 +217,7 @@ function handleLoad(text) {
   els.assumpCapacity.value = state.assumptions.teamSprintCapacityHours;
   els.assumpScale.value = state.assumptions.costScale;
   els.consoleSection.hidden = false;
+  setAssessmentDependentButtonsEnabled(true);
   recompute();
   recordAssessmentSignalsIfNeeded(assessment);
 }
@@ -512,6 +526,11 @@ function init() {
     els.assumpCapacity.value = state.assumptions.teamSprintCapacityHours;
     els.assumpScale.value = state.assumptions.costScale;
     els.consoleSection.hidden = true;
+    setAssessmentDependentButtonsEnabled(false);
+    // #summary-bar lives in the aside, which (unlike #console-section) stays visible
+    // across Reset — it must be cleared explicitly or it shows stale feature/score
+    // data from the assessment that was just reset.
+    els.summaryBar.innerHTML = SUMMARY_BAR_EMPTY_HTML;
     els.healthCardPreview.hidden = true;
     els.healthCardPreview.innerHTML = "";
     els.driftBaselineInput.value = "";
